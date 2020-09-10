@@ -3,7 +3,8 @@ module Eval
 open Ast
 
 //
-// enviroment is a function f, that when given a name (string) returns a (Some value) or None
+// Enviroment is f.
+// Where f is a function that when given a name returns a value or not.
 //
 type Env = Context of (string -> Value option)
 

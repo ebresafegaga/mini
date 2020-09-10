@@ -107,11 +107,10 @@ type UnvalidatedUser = {
     DateOfBirth : string
 }
 
-type ValidatedUser = {   
-    Name : string
-    Email : string
-    DateOfBirth : DateTime
-}
+type ValidatedUser = 
+   { Name : string
+     Email : string
+     DateOfBirth : DateTime }
 
 type ValidationFailure =
     | NameIsInvalidFailure
@@ -249,7 +248,6 @@ let map2 = [ ("A","Alice"); ("B","Bob") ] |> Map.ofList
 let map3 = [ ("Delta", "Asaba"); ("Rivers", "PH") ] |> Map.ofList
 
 let multiLookUp key = orElse {
-    return! map1.TryFind key
     return! map2.TryFind key
     return! map3.TryFind key
 } 
@@ -466,7 +464,7 @@ module SymbolicDiff =
 
     let rec toString = function 
         | Const x -> string x
-        |  X -> "x"
+        | X -> "x"
         | Add (e1, e2) -> sprintf "((%A) + (%A))" (toString e1) (toString e2) 
         | Sub (e1, e2) -> sprintf "((%A) - (%A))" (toString e1) (toString e2)
         | Mul (e1, e2) -> sprintf "((%A) * (%A))" (toString e1) (toString e2)
@@ -476,7 +474,7 @@ module SymbolicDiff =
         | Log e -> sprintf "log (%A)" (toString e)
         | Exp e -> sprintf "exp (%A)" (toString e)
 
-    fsi.AddPrinter toString
+    // fsi.AddPrinter toString
 
 
 let rec bigList = 
@@ -511,7 +509,7 @@ let rec countAC aa c = function
     | Node (a, n, b) -> countAC aa (fun acc -> countAC acc c b) a 
 
 let sum l = List.fold (+) 0
-let _ = List.map sum >> sum // rite or passage , hind sight, unilateral
+// let s = List.map sum >> sum // rite or passage , hind sight, unilateral
 
 
 
