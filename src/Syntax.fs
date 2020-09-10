@@ -342,7 +342,9 @@ let oneOrMore pattern =
     let rec go p tokens result = 
         match pattern p tokens with
         | None -> p, List.rev result 
-        | Some (np, expr) -> go np tokens (expr :: result) 
+        | Some (np, expr) -> 
+            printfn "Got %A at %A" expr np
+            go np tokens (expr :: result) 
 
     fun position tokens ->
         let pos, result = go position tokens []
@@ -450,7 +452,7 @@ let rec (|Expression|_|) p tokens =
     | _ -> None
 
 and (|PrimaryExpression|_|) p tokens = 
-    match tokens with 
+    match tokens with
     | LambdaExpression p result -> Some result 
     | ApplicationExpression p result -> Some result // this might not be good
     | StringLiteral p result -> Some result
@@ -462,12 +464,16 @@ and (|PrimaryExpression|_|) p tokens =
     | _ -> None
 
 and (|ParenthesizedExpression|_|) p tokens =
-    match tokens with 
+    match tokens with
     | Token OpenParenthesis p (p1, tOpen) -> 
-        match tokens with 
+        printfn "start" 
+        match tokens with
         | Expression p1 (p2, expr) ->
-            match tokens with 
-            | Token CloseParenthesis p2 (p3, tClose) -> Some (p3, expr) 
+            printfn "got %A" expr
+            match tokens with
+            | Token CloseParenthesis p2 (p3, tClose) -> 
+                printfn "end"
+                Some (p3, expr) 
             | _ ->  None
         | _ ->  None
     | _ -> None
@@ -494,7 +500,7 @@ and (|VariableExpression|_|) p tokens =
     if p >= len then None
     else
         match tokens.[p] with 
-        | { Kind = Id id | Builtin id } -> Some (p+1, Ast.Variable id)
+        | { Kind = Id id | Builtin id } -> Some (p+1, Ast.Variable id) // hmm?
         | _ -> None
 
 // binding: v = <expr>
@@ -624,17 +630,10 @@ and (|LambdaExpression|_|) p tokens =
 
 and (|SimpleExpression|_|) p tokens = 
     match tokens with 
-    | BindingExpression p result -> Some result // maybe not?
-    // | FunctionExpression p result -> Some result 
-    | LambdaExpression p result -> Some result  
-    | BinaryExpression p result -> Some result
-    | ListExpression p result -> Some result
-    | ParenthesizedExpression p result -> Some result  
-    | NumberExpression p result -> Some result 
-    | StringLiteral p result -> Some result
-    | VariableExpression p result -> Some result
+    | ListExpression p result | ParenthesizedExpression p result
+    | NumberExpression p result | StringLiteral p result
+    | VariableExpression p result 
     | UnitExpression p result -> Some result
-    //| ApplicationExpression p result -> Some result
     | _ -> None
 
 // TODO: allow call with unit 
@@ -647,35 +646,34 @@ and (|ApplicationExpression|_|) p tokens =
     let p1 p tokens = 
         match tokens with 
         | VariableExpression p (p1, name) -> 
+            printfn "Parsing arguments now"
             match pattern p1 tokens with 
-            | Some (p3, ps) -> Some (p3, Ast.Application (name, ps))
+            | Some (p3, ps) -> 
+                printfn "got %A from mutiple simple exps" ps
+                Some (p3, Ast.Application (name, ps))
             | _ -> None
         | _ -> None
-    let p2 p tokens = 
-        match tokens with 
+    let p2 p tokens =
+        match tokens with
         | ParenthesizedExpression p (p1, (Ast.Lambda _ as f)) -> 
             match pattern p1 tokens with 
             | Some (p2, ps) -> Some (p2, Ast.Application (f, ps))
-            | _ -> None 
-        | _ -> None 
+            | _ -> None
+        | _ -> None
 
     thisOrThat p1 p2 p tokens 
 
 let filter = List.filter (isWs >> not)
-let tokens = tokenize <|"v" |> filter
-let t3 = tokenize "(((1 + 2) + 4) + 34) - 34 " |> filter
-let ts = tokenize "1 + (2 + (4 + (34 - 34)))" |> filter
-
-let n, expr =
-    match tokens with
-    | Expression 0 r -> r
-    | _ -> 0, Ast.Number 0.
 
 let parse tokens = 
     match tokens with 
     | Expression 0 result -> snd result 
     | _ -> failwith "Syntax error!"
 
+let parse2 tokens = 
+    match tokens with 
+    | Expression 0 result -> result 
+    | _ -> failwith "Syntax error!"
 
 // To add 
 
