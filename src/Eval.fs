@@ -111,7 +111,10 @@ let rec eval ctx expr =
 // 1 : determine if f is a churchable
 // 2 : Check how many args f takes - params 
 // 3 : Check how many args given - args 
-// 4 : if args > params, fail 
+// 4 : if args > params
+//         check if f returns a function
+//         if it does, apply arguments one by one 
+//         if it doesn't fail
 // 5 : if args < parms, return a curried function  **
 // 6 : if equal, *apply* 
 // NOTE : if f returns a lambda - g, add args to g's context **
