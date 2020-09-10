@@ -22,7 +22,7 @@ type Kind =
     | Dot
     | DotDot
     | Ws
-    | Bad
+    | Bad of char
 
 type Location = int
 
@@ -281,8 +281,8 @@ let lex pos t =
     | BuiltinId pos (p, func) ->
         let range = pos, p - 1
         { Range = range; Kind = Builtin func }, p - 1
-    | _ -> 
-        { Range = (pos, pos); Kind = Bad }, pos + 1 // is this ok?
+    | c -> 
+        { Range = (pos, pos); Kind = Bad c.[0] }, pos + 1
 
 let tokenize text =
     let rec aux pos my k = // cps vs. normal tail call?

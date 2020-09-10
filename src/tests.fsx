@@ -22,21 +22,21 @@ foldl ( ** ) 2. l
 type [<Measure>] Degree
 let angle = 100.0<Degree>
 
-type RoundComputationBuilder (digits: int) = 
-    let round (x:decimal) = Math.Round (x, digits)
+// type RoundComputationBuilder (digits: int) = 
+//     let round (x:decimal) = Math.Round (x, digits)
 
-    member x.Bind (a, rest) =
-        rest (round a)
+//     member x.Bind (a, rest) =
+//         rest (round a)
     
-    member x.Return a = round a
+//     member x.Return a = round a
 
-let round = RoundComputationBuilder
+// let round = RoundComputationBuilder
 
-let w = round 23 {
-    let! a = 34.545m
+// let w = round 23 {
+//     let! a = 34.545m
     
-    return a
-}
+//     return a
+// }
 
 type MaybeBuilder () =  
     member x.Bind (a, f) = 
@@ -118,7 +118,7 @@ let seqA' l = l |> List.fold (fun f x -> fun a -> f (cons <!> x <*> a) ) id
 let s = "dede"
 let ss = Syntax.sr s |> List.map charP
 
-let sum l = l |> List.fold (fun f x -> fun a -> f (a + x)) id 
+// let sum l = l |> List.fold (fun f x -> fun a -> f (a + x)) id 
 
 let parse = Syntax.ch <!> sequenceA ss
 
@@ -250,13 +250,13 @@ let rec fibC' n k =
 [1 .. 10] |> List.map (fibC >> fun f -> f id)
 [1 .. 10] |> List.map (fibC' >> fun f -> f id)
 
-let map f list cont = 
-    let rec loop acc list cont = 
-        match list with 
-        | [] -> cont (List.rev acc)
-        | x :: xs -> f x (fun x' -> loop (x'::acc) xs cont)
+// let map f list cont = 
+//     let rec loop acc list cont = 
+//         match list with 
+//         | [] -> cont (List.rev acc)
+//         | x :: xs -> f x (fun x' -> loop (x'::acc) xs cont)
 
-    loop [] list 
+//     loop [] list 
     
 type BinomialTree<'a> = Nd of int * 'a * BinomialTree<'a> list
 
