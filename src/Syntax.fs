@@ -638,9 +638,9 @@ and (|ApplicationExpression|_|) p tokens =
         | _ -> None 
     let p2 p tokens = 
         match tokens with 
-        | ParenthesizedExpression p (p1, (Ast.Function _ | Ast.Lambda _ as func)) -> 
+        | ParenthesizedExpression p (p1, (Ast.Lambda _ as f)) -> 
             match pattern p1 tokens with 
-            | Some (p2, ps) -> Some (p2, Ast.Application (func, ps))
+            | Some (p2, ps) -> Some (p2, Ast.Application (f, ps))
             | _ -> None 
         | _ -> None 
 
