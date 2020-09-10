@@ -3,7 +3,7 @@ module Eval
 open Ast
 
 //
-// Enviroment is f.
+// Enviroment is an f.
 // Where f is a function that when given a name returns a value or not.
 //
 type Thunk = Expression 
@@ -152,9 +152,15 @@ and apply ctx f args =
                 |> List.map (eval ctx >> fst) // Eval args 
             let names, rest = List.splitAt aLen arguments
             let context' = assoc names values
-            let enviroment = addCtx context' context
+            let enviroment = 
+                addCtx context' context
+                |> addCtx ctx
 
             let value = FuncValue (rest, enviroment, thunk), ctx
             
             if curry then value
-            else eval enviroment thunk // aLen = pLen, is a simple function application, see step 6. But it must be applied with the right env.
+            (* 
+               aLen = pLen, is a simple function application, see step 6. 
+               But it must be applied with the right env. 
+            *)
+            else eval enviroment thunk 
