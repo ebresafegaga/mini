@@ -282,7 +282,7 @@ let lex pos t =
         let range = pos, p - 1
         { Range = range; Kind = Builtin func }, p - 1
     | c -> 
-        { Range = (pos, pos); Kind = Bad c.[0] }, pos + 1
+        { Range = (pos, pos); Kind = Bad c.[pos] }, pos + 1
 
 let tokenize text =
     let rec aux pos my k = // cps vs. normal tail call?
