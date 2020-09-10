@@ -94,7 +94,7 @@ let rec eval ctx expr =
         UnitValue, addVar (a, value) newCtx
     | Lambda (vars, expr) ->
         // let value, _ = eval ctx expr
-        FuncValue (vars, ctx, expr), empty // ????????????
+        FuncValue (vars, ctx, expr), ctx
     | Function (name, vars, expr) ->
         let func = FuncValue (vars, ctx, expr)
         let newCtx = addVar (name, func) empty // ??????????????
