@@ -438,8 +438,7 @@ let rec (|Expression|_|) p tokens =
     match tokens with 
     | BindingExpression p result -> Some result 
     | FunctionExpression p result -> Some result 
-    | LambdaExpression p result -> Some result
-    | ApplicationExpression p result -> Some result  
+    | LambdaExpression p result -> Some result  
     | BinaryExpression p result -> Some result
     | ListExpression p result -> Some result
     | ParenthesizedExpression p result -> Some result  
@@ -447,12 +446,13 @@ let rec (|Expression|_|) p tokens =
     | StringLiteral p result -> Some result
     | VariableExpression p result -> Some result
     | UnitExpression p result -> Some result
+    | ApplicationExpression p result -> Some result
     | _ -> None
 
 and (|PrimaryExpression|_|) p tokens = 
     match tokens with 
     | LambdaExpression p result -> Some result 
-    | ApplicationExpression p result -> Some result
+    | ApplicationExpression p result -> Some result // this might not be good
     | StringLiteral p result -> Some result
     | UnitExpression p result -> Some result 
     | NumberExpression p result -> Some result 
@@ -579,7 +579,7 @@ and (|UnitExpression|_|) p tokens =
     // let k' = ((|Token|_|) CloseParenthesis)
     // let g = fun _ -> Ast.Unit
     // thisAndThat k k' <!> g
- 
+
 and (|FunctionExpression|_|) p tokens = 
     let pattern = oneOrMore (|VariableExpression|_|)
 
@@ -622,10 +622,25 @@ and (|LambdaExpression|_|) p tokens =
         | _ -> None 
     | _ -> None 
 
+and (|SimpleExpression|_|) p tokens = 
+    match tokens with 
+    | BindingExpression p result -> Some result // maybe not?
+    // | FunctionExpression p result -> Some result 
+    | LambdaExpression p result -> Some result  
+    | BinaryExpression p result -> Some result
+    | ListExpression p result -> Some result
+    | ParenthesizedExpression p result -> Some result  
+    | NumberExpression p result -> Some result 
+    | StringLiteral p result -> Some result
+    | VariableExpression p result -> Some result
+    | UnitExpression p result -> Some result
+    //| ApplicationExpression p result -> Some result
+    | _ -> None
+
 // TODO: allow call with unit 
 // cos 12, (fn x => x + 1) 20, (f x y = x + y) 10 10
 and (|ApplicationExpression|_|) p tokens =
-    let pattern = oneOrMore (|Expression|_|) // TODO: should be a smaller set than an Expression pattern
+    let pattern = oneOrMore (|SimpleExpression|_|)
     // let b = thisAndThat ((|VariableExpression|_|) <!> fun x -> [x]) pattern <!> List.concat
     // let c = thisAndThat ((|ParenthesizedExpression|_|) <!> fun x -> [x]) pattern <!> List.concat
     // let d = thisOrThat b c
@@ -635,7 +650,7 @@ and (|ApplicationExpression|_|) p tokens =
             match pattern p1 tokens with 
             | Some (p3, ps) -> Some (p3, Ast.Application (name, ps))
             | _ -> None
-        | _ -> None 
+        | _ -> None
     let p2 p tokens = 
         match tokens with 
         | ParenthesizedExpression p (p1, (Ast.Lambda _ as f)) -> 

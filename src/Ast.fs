@@ -23,8 +23,8 @@ type Var = string
 
 type Expression =
     | Unit
-    | Number of float
-    | String of string
+    | Number of float   // TODO : 
+    | String of string //   Fuse these into a single case called "Const"
     | Variable of Var
     | Binding of Var * Expression
     | Binary of Expression * Var * Expression
