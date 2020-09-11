@@ -1,16 +1,16 @@
 module Ast
 
 // operators -> sin, cos, tan, +, -, **, *, /, pow, x nRoot y, %
-// variables = x = 23, yyy = edf
+// variables = let x = 23, let yyy = edf
 // numbers -> floats
 // string -> "eded"
-// function -> f x = x * 2, pow x y = x ** y
+// function -> let f x = x * 2, pow x y = x ** y
 // infix functions (also operators) -> 2 mod 4
 // list -> [], [1..10], [1, 2, 4]: l = [1, 3, 5]; l[9]
 
 // keywords: fn -> g = fn a v => a + v + g
-// f x = x + 2
-// g x = fn x y => 45
+// let f x = x + 2
+// let g x = fn x y => 45
 
 type Operator =
     | Addition

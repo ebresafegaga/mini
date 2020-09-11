@@ -32,7 +32,7 @@ type Token =
     { Range: Range 
       Kind : Kind }
 
-let keywords = ["fn"]
+let keywords = ["fn"; "let"; "rec"; "in"]
 let builtinKeywords =
     ["sin"; "cos"; "tan"; "map"; "head"; "tail"; "print"; "iterList"; "iterNat"]
 
@@ -505,19 +505,23 @@ and (|VariableExpression|_|) p tokens =
 
 // binding: v = <expr>
 and (|BindingExpression|_|) p tokens = 
-    match tokens with
-    | VariableExpression p (np, Ast.Variable var) ->
-        if np >= List.length tokens then None // guard
-        else
-            match tokens.[np] with
-            |  { Kind = Equals } ->
-                let p = np + 1 // re bind 
-                if p >= List.length tokens then None // guard
-                else
-                    match tokens with
-                    | Expression p (np, expr) -> Some (np, Ast.Binding (var, expr)) 
-                    | _ -> None
-            | _ -> None 
+    let l = Kwd "let"
+    match tokens with 
+    | Token l p (p, tok) -> 
+        match tokens with
+        | VariableExpression p (np, Ast.Variable var) ->
+            if np >= List.length tokens then None // guard
+            else
+                match tokens.[np] with
+                |  { Kind = Equals } ->
+                    let p = np + 1 // re bind 
+                    if p >= List.length tokens then None // guard
+                    else
+                        match tokens with
+                        | Expression p (np, expr) -> Some (np, Ast.Binding (var, expr)) 
+                        | _ -> None
+                | _ -> None 
+        | _ -> None 
     | _ -> None 
 
 and (|BinaryExpression|_|) p tokens = 
@@ -588,22 +592,25 @@ and (|UnitExpression|_|) p tokens =
 
 and (|FunctionExpression|_|) p tokens = 
     let pattern = oneOrMore (|VariableExpression|_|)
-
-    match pattern p tokens with 
-    | Some (p1, Ast.Variable name :: ps) -> 
-        match tokens with 
-        | Token Equals p1 (p2, eq) -> 
+    let l = Kwd "let"
+    match tokens with 
+    | Token l p (p, _) -> 
+        match pattern p tokens with 
+        | Some (p1, Ast.Variable name :: ps) -> 
             match tokens with 
-            | Expression p2 (p3, expr) -> 
-                let l = 
-                    ps 
-                    |> List.map (function
-                                | Ast.Variable n -> n 
-                                | _ -> failwith "(|FunctionExpression|_|): Internal error")
-                Some (p3, Ast.Function (name, l, expr))
-            | _ -> None
-        | _ ->  None
-    | _ -> None
+            | Token Equals p1 (p2, eq) -> 
+                match tokens with 
+                | Expression p2 (p3, expr) -> 
+                    let l = 
+                        ps 
+                        |> List.map (function
+                                    | Ast.Variable n -> n 
+                                    | _ -> failwith "(|FunctionExpression|_|): Internal error")
+                    Some (p3, Ast.Function (name, l, expr))
+                | _ -> None
+            | _ ->  None
+        | _ -> None
+    | _ -> None 
 
 // alow unit params 
 and (|LambdaExpression|_|) p tokens =
