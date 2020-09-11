@@ -78,7 +78,7 @@ let getFunc = function
     | ListValue _ -> [], empty, Thunk Unit
 
 let isThunkFunc = function 
-    | Thunk (Function _) |Thunk (Lambda _) -> true 
+    | Thunk (Function _) | Thunk (Lambda _) -> true 
     | _ -> false 
 
 let rec eval ctx expr =
@@ -101,7 +101,7 @@ let rec eval ctx expr =
         FuncValue (vars, ctx, Thunk expr), ctx
     | Function (name, vars, expr) ->
         let func = FuncValue (vars, ctx, Thunk expr)
-        let newCtx = addVar (name, func) empty // ??????????????
+        let newCtx = addVar (name, func) ctx
         func, newCtx
     | List exprs ->
         let v = exprs |> List.map (eval ctx >> fst)
