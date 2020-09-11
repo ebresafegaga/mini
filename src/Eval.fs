@@ -11,8 +11,7 @@ type Thunk = Thunk of Expression
 type Env = Context of (string -> Value option)
 
 and Value =
-    | NumericValue of float
-    | StringValue of string
+    | ConstValue of Const 
     | ListValue of Value list
     | UnitValue
     | FuncValue of string list * Env * Thunk
@@ -61,19 +60,19 @@ let assoc sl vs =
 
 let churchable = function
     | FuncValue _ -> true
-    | NumericValue _ | StringValue _
+    | ConstValue _
     | UnitValue | FuncValue _
     | ListValue _ -> false
 
 let countParams = function
     | FuncValue (ps, _, _) -> List.length ps
-    | NumericValue _ | StringValue _
+    | ConstValue _
     | UnitValue | FuncValue _
     | ListValue _ -> 0
 
 let getFunc = function
     | FuncValue (arg, env, expr) -> arg, env, expr
-    | NumericValue _ | StringValue _
+    | ConstValue _
     | UnitValue | FuncValue _
     | ListValue _ -> [], empty, Thunk Unit
 
@@ -81,11 +80,11 @@ let isThunkFunc = function
     | Thunk (Function _) | Thunk (Lambda _) -> true 
     | _ -> false 
 
+
 let rec eval ctx expr =
     match expr with
     | Unit -> UnitValue, ctx
-    | Number n -> NumericValue n, ctx
-    | String s -> StringValue s, ctx
+    | Const x -> ConstValue x, ctx
     | Variable v ->
         let (Context f) = ctx
         match f v with

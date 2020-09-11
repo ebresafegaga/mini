@@ -32,7 +32,7 @@ type Token =
     { Range: Range 
       Kind : Kind }
 
-let keywords = ["fn"; "let"; "rec"; "in"]
+let keywords = ["fn"; "let"; "rec"; "in"; "#t"; "#f"]
 let builtinKeywords =
     ["sin"; "cos"; "tan"; "map"; "head"; "tail"; "print"; "iterList"; "iterNat"]
 
@@ -68,7 +68,8 @@ let rec gopher f p text =
 let ws = System.Char.IsWhiteSpace
 let letter = System.Char.IsLetter
 let digit = System.Char.IsDigit
-
+let symbol x = System.Char.IsLetter x || x = '#' // A hack, fix later
+ 
 let rec (|WS|_|) p t = 
     let len = List.length t
     let rec go c =
@@ -93,10 +94,17 @@ let (|Letter|_|) p t =
         | c when letter c -> Some (p+1, c)
         | _ -> None
 
+let (|LetterOrSymbol|_|) p t =
+    if List.length t <= p then None
+    else 
+        match t.[p] with 
+        | c when symbol c -> Some (p+1, c)
+        | _ -> None
+
 let (|Keyword|_|) p t =
     let rec go np acc = 
         match t with 
-        | Letter np (pos, ch) -> go pos (ch :: acc)
+        | LetterOrSymbol np (pos, ch) -> go pos (ch :: acc)
         | _ -> np, List.rev acc
     let pos, chs = go p []
     if List.isEmpty chs then None
@@ -304,13 +312,11 @@ let tokenize text =
     go 0 (sr text) []
 
 // token helpers 
-let isOp =
-    function 
+let isOp = function 
     | { Kind = Plus | Minus | Star | Slash | Dot } -> true
     | _ -> false
 
-let opStr =
-    function 
+let opStr = function 
     | Plus -> "+" 
     | Minus -> "-" 
     | Star -> "*" 
@@ -318,18 +324,15 @@ let opStr =
     | Dot -> "." 
     |_ -> "<nil>"
 
-let isWs =
-    function
+let isWs = function
     | { Kind = Ws } -> true
     | _ -> false 
 
-let isTermOp = 
-    function 
+let isTermOp = function 
     | { Kind = Plus | Minus } -> true 
     | _ -> false
 
-let isFactorOp = 
-    function 
+let isFactorOp = function 
     | { Kind = Star | Slash } -> true 
     | _ -> false
 
@@ -444,8 +447,7 @@ let rec (|Expression|_|) p tokens =
     | BinaryExpression p result -> Some result
     | ListExpression p result -> Some result
     | ParenthesizedExpression p result -> Some result  
-    | NumberExpression p result -> Some result 
-    | StringLiteral p result -> Some result
+    | ConstExpression p result
     | VariableExpression p result -> Some result
     | UnitExpression p result -> Some result
     | ApplicationExpression p result -> Some result
@@ -455,9 +457,8 @@ and (|PrimaryExpression|_|) p tokens =
     match tokens with
     | LambdaExpression p result -> Some result 
     | ApplicationExpression p result -> Some result // this might not be good
-    | StringLiteral p result -> Some result
+    | ConstExpression p result 
     | UnitExpression p result -> Some result 
-    | NumberExpression p result -> Some result 
     | VariableExpression p result -> Some result
     | ListExpression p result -> Some result
     | ParenthesizedExpression p result -> Some result 
@@ -483,16 +484,30 @@ and (|NumberExpression|_|) p tokens =
     if p >= len then None
     else  
         match tokens.[p] with 
-        | { Kind = Num num } -> Some (p+1, Ast.Number num)
+        | { Kind = Num num } -> Some (p+1, Ast.Const (Ast.ConstNumber num))
         | _ -> None
+
+and (|BoolLiteral|_|) p tokens = 
+    let t = Kwd "#t" 
+    let f = Kwd "#f" 
+    match tokens with 
+    | Token t p (p, _) -> Some (p, Ast.Const (Ast.ConstBool true))
+    | Token f p (p, _) -> Some (p, Ast.Const (Ast.ConstBool false))
+    | _ -> None 
 
 and (|StringLiteral|_|) p tokens = 
     let len = List.length tokens 
     if p >= len then None
     else 
         match tokens.[p] with 
-        | { Kind = QuotedId id } -> Some (p+1, Ast.String id)
+        | { Kind = QuotedId id } -> Some (p+1, Ast.Const (Ast.ConstString id))
         | _ -> None 
+
+and (|ConstExpression|_|) p tokens = 
+    match tokens with 
+    | StringLiteral p res | NumberExpression p res 
+    | BoolLiteral p res -> Some res
+    | _ -> None
 
 // variable:   x, y, z
 and (|VariableExpression|_|) p tokens = 
@@ -549,36 +564,31 @@ and (|ListExpression|_|) p tokens =
 
     match tokens with
     | Token OpenSquareBracket p (np, opn) -> 
-        printfn "Matches [";
         match numbers np tokens with
         | Some (tp, list) -> 
-            printfn "Matches %A" list;
             match tokens with 
             | Token CloseSquareBraket tp (fp, cls) -> Some (fp, Ast.List list) 
             | _ -> None 
         | _ -> 
-            printfn "Wanna try to match x..y or ] now"
             match tokens with 
-            | Token CloseSquareBraket np (fp, _) -> printfn "Matches ]"; Some (fp, Ast.List [])
+            | Token CloseSquareBraket np (fp, _) ->  Some (fp, Ast.List [])
             | Comprehension np (fp, list) -> 
-                printfn "Matches x..y";
                 match list with
-                | [Ast.Number start; Ast.Number ed] ->
+                | [Ast.Const (Ast.ConstNumber start); Ast.Const (Ast.ConstNumber ed)] ->
                     match tokens with 
                     | Token CloseSquareBraket fp (fp', _) -> 
                         let l = 
                             [int start .. int ed] 
-                            |> List.map (float >> Ast.Number) 
+                            |> List.map (float >> Ast.ConstNumber >> Ast.Const) 
                             |> Ast.List
                         Some (fp', l)
                     | _ -> None 
-                | _ -> printfn "More than two items in x..y so it aborts"; None 
-            | _ -> printfn "couldn't match x..y or ]"; None 
+                | _ -> None 
+            | _ -> None 
     | _ -> None 
 
 // () 
-and (|UnitExpression|_|) p tokens = 
-    
+and (|UnitExpression|_|) p tokens =
     match tokens with
     | Token OpenParenthesis p (p1, _) -> 
         match tokens with
@@ -638,7 +648,7 @@ and (|LambdaExpression|_|) p tokens =
 and (|SimpleExpression|_|) p tokens = 
     match tokens with 
     | ListExpression p result | ParenthesizedExpression p result
-    | NumberExpression p result | StringLiteral p result
+    | ConstExpression p result
     | VariableExpression p result 
     | UnitExpression p result -> Some result
     | _ -> None
