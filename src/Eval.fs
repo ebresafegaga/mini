@@ -110,15 +110,16 @@ let rec eval ctx expr =
     | Binary _ -> invalidOp "Not yet implemented"
 
 // FUNCTION Application 101: 
-// 1 : determine if f is a churchable
+// Given an expression f
+// 1 : Determine if f is a churchable (if it evaluates to a function)
 // 2 : Check how many args f takes - params 
 // 3 : Check how many args given - args 
-// 4 : if args > params
+// 4 : If args > params
 //         check if f returns a function
 //         if it does, apply arguments one by one 
 //         if it doesn't fail
-// 5 : if args < parms, return a curried function  **
-// 6 : if equal, *apply* 
+// 5 : If args < parms, return a curried function  **
+// 6 : If equal, *apply* 
 // NOTE : if f returns a lambda - g, add args to g's context **
 //        Finally, when args = params, make sure we eval the thunk with the "deepest" context 
 //        which will hold variables of previously curried functions (if any) - This is how to APPLY. 
