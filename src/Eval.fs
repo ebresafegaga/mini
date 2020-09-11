@@ -6,7 +6,7 @@ open Ast
 // Enviroment is an f.
 // Where f is a function that when given a name returns a value or not.
 //
-type Thunk = Expression 
+type Thunk = Thunk of Expression 
 
 type Env = Context of (string -> Value option)
 
@@ -17,9 +17,11 @@ and Value =
     | UnitValue
     | FuncValue of string list * Env * Thunk
 
+let unThunk = function Thunk thunk -> thunk
+
 // id function 
 let m () = 
-    FuncValue (["x"], Context (fun x -> None), Variable "x")
+    FuncValue (["x"], Context (fun x -> None), Thunk $ Variable "x")
 
 let mapContext f (Context g) = 
     let k s = Option.map f (g s)
@@ -73,10 +75,10 @@ let getFunc = function
     | FuncValue (arg, env, expr) -> arg, env, expr
     | NumericValue _ | StringValue _
     | UnitValue | FuncValue _
-    | ListValue _ -> [], empty, Unit
+    | ListValue _ -> [], empty, Thunk Unit
 
 let isThunkFunc = function 
-    | Function _ | Lambda _ -> true 
+    | Thunk (Function _) |Thunk (Lambda _) -> true 
     | _ -> false 
 
 let rec eval ctx expr =
@@ -96,9 +98,9 @@ let rec eval ctx expr =
         UnitValue, addVar (a, value) newCtx
     | Lambda (vars, expr) ->
         // let value, _ = eval ctx expr
-        FuncValue (vars, ctx, expr), ctx
+        FuncValue (vars, ctx, Thunk expr), ctx
     | Function (name, vars, expr) ->
-        let func = FuncValue (vars, ctx, expr)
+        let func = FuncValue (vars, ctx, Thunk expr)
         let newCtx = addVar (name, func) empty // ??????????????
         func, newCtx
     | List exprs ->
@@ -135,9 +137,9 @@ and apply ctx f args =
             // printfn "here o"
             // Check if this "function value" returns a function
             // if it does, apply arguments one by one 
-            let _, _, thunk = getFunc func
+            let _, _, Thunk thunk = getFunc func
             // let v = eval context e |> fst  // v |> churchable |> not // Noooooooooooo
-            if  not $ isThunkFunc thunk
+            if  not $ isThunkFunc (Thunk thunk)
             then failwith "This value is not a function and cannot be applied."
             else
                 let _, env, _ = 
@@ -166,4 +168,4 @@ and apply ctx f args =
                aLen = pLen, is a simple function application, see step 6. 
                But it must be applied with the right env. 
             *)
-            else eval enviroment thunk 
+            else eval enviroment (unThunk thunk) 
