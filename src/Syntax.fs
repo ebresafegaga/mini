@@ -749,10 +749,3 @@ let rec binaryExpr tokens =
     // Start 
     
     ()
-
-// wtf??
-exception Not_found
-
-let getMessage (e:Not_found) = e.Message
-
-let msg = getMessage (Not_found :?> Not_found)

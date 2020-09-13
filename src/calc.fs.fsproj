@@ -9,7 +9,6 @@
     <Compile Include="Syntax.fs" />
     <Compile Include="Typing.fs" />
     <Compile Include="Eval.fs" />
-    <Compile Include="tests.fsx" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>

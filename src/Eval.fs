@@ -8,7 +8,11 @@ open Ast
 //
 type Thunk = Thunk of Expression 
 
-type Env = Context of (string -> Value option)
+type Church = 
+    | Defined of string list * Env * Thunk
+    | Builtin of (Value list -> Value)
+
+and Env = Context of (string -> Value option)
 
 and Value =
     | ConstValue of Const 
@@ -16,11 +20,12 @@ and Value =
     | UnitValue
     | FuncValue of string list * Env * Thunk
 
-let unThunk = function Thunk thunk -> thunk
+let unThunk (Thunk thunk) = thunk
 
-// id function 
-let m () = 
-    FuncValue (["x"], Context (fun x -> None), Thunk $ Variable "x")
+let id' vs = 
+    match vs with 
+    | [x] -> x
+    | _ -> failwith "id expected one argument" 
 
 let mapContext f (Context g) = 
     let k s = Option.map f (g s)
