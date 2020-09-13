@@ -12,7 +12,7 @@ type Church =
     | Defined of string list * Env * Thunk
     | Builtin of (Value list -> Value)
 
-and Env = Context of (string -> Value option)
+and Env = Env of (string -> Value option)
 
 and Value =
     | ConstValue of Const 
@@ -27,42 +27,35 @@ let id' vs =
     | [x] -> x
     | _ -> failwith "id expected one argument" 
 
-let mapContext f (Context g) = 
+let mapContext f (Env g) = 
     let k s = Option.map f (g s)
-    Context k
+    Env k
 
-let unwrapContext (Context f) = f
+let unwrapContext (Env f) = f
 
 let empty =
     let f _ = None
-    Context f
+    Env f
 
-// TODO: implement builtin functions, operator precedence and custom operators
-let fromF f = 
-    ()
-    
-let builtin x = 
-    Syntax.builtinKeywords 
-    |> List.contains x
-
-let addVar (var, expr) (Context ctx) =
+let addVar (var, expr) (Env ctx) =
     let f s =
         if s = var then (Some expr)
         else ctx s
-    Context f
+    Env f
 
-let addCtx (Context f) (Context g) = 
+let addCtx (Env f) (Env g) = 
     let k s =
         match f s with
         | None -> g s
         | Some _ as v -> v
-    Context k
+    Env k
 
 // create a context from a list of string and corresponding values
 let assoc sl vs =
     (sl, vs)
     ||> List.fold2 (fun s arg value -> addVar (arg, value) s) empty
 
+/// Is this value a function? 
 let churchable = function
     | FuncValue _ -> true
     | ConstValue _
@@ -91,7 +84,7 @@ let rec eval ctx expr =
     | Unit -> UnitValue, ctx
     | Const x -> ConstValue x, ctx
     | Variable v ->
-        let (Context f) = ctx
+        let (Env f) = ctx
         match f v with
         | Some x -> x, ctx
         | None -> 
