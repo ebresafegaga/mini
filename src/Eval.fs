@@ -6,11 +6,11 @@ open Ast
 // Enviroment is an f.
 // Where f is a function that when given a name returns a value or not.
 //
-type Thunk = Thunk of Expression 
+type Thunk = Thunk of Expression
 
-type Church = 
+type Function =
     | Defined of string list * Env * Thunk
-    | Builtin of (Value list -> Value)
+    | Builtin of (Expression list -> Value)
 
 and Env = Env of (string -> Value option)
 
@@ -22,20 +22,13 @@ and Value =
 
 let unThunk (Thunk thunk) = thunk
 
-let id' vs = 
-    match vs with 
-    | [x] -> x
-    | _ -> failwith "id expected one argument" 
-
 let mapContext f (Env g) = 
     let k s = Option.map f (g s)
     Env k
 
 let unwrapContext (Env f) = f
 
-let empty =
-    let f _ = None
-    Env f
+let empty = Env (const' None)
 
 let addVar (var, expr) (Env ctx) =
     let f s =
@@ -74,12 +67,12 @@ let getFunc = function
     | UnitValue | FuncValue _
     | ListValue _ -> [], empty, Thunk Unit
 
-let isThunkFunc = function 
+let isThunkFunc = function
     | Thunk (Function _) | Thunk (Lambda _) -> true 
-    | _ -> false 
-
+    | _ -> false
 
 let rec eval ctx expr =
+    let eval' = eval ctx
     match expr with
     | Unit -> UnitValue, ctx
     | Const x -> ConstValue x, ctx
@@ -87,10 +80,15 @@ let rec eval ctx expr =
         let (Env f) = ctx
         match f v with
         | Some x -> x, ctx
-        | None -> 
-            // Handle built-in operators
+        | None ->
+            // TODO: Handle built-in operators
             failwithf "Unbound value %s" v
-    | Binding (a, expr) -> 
+    | If (exp, if', else') -> 
+        match fst $ eval' exp with 
+        | ConstValue (ConstBool v) -> 
+            if v then eval ctx if' else eval ctx else'
+        | _ -> failwith "invalid if expression"
+    | Binding (a, expr) ->
         let value, newCtx = eval ctx expr 
         UnitValue, addVar (a, value) newCtx
     | Lambda (vars, expr) ->
@@ -98,13 +96,28 @@ let rec eval ctx expr =
         FuncValue (vars, ctx, Thunk expr), ctx
     | Function (name, vars, expr) ->
         let func = FuncValue (vars, ctx, Thunk expr)
-        let newCtx = addVar (name, func) ctx
-        func, newCtx
+        let ctx' = addVar (name, func) ctx 
+        func, ctx'
+    | RecFunction (name, vars, expr) ->
+        // To Support recursion, not yet tested
+        let rec me = FuncValue (vars, ctx', Thunk expr)
+        and ctx' = addVar (name, me) ctx 
+        let func = FuncValue (vars, ctx', Thunk expr)
+        func, ctx'
     | List exprs ->
-        let v = exprs |> List.map (eval ctx >> fst)
+        let v = exprs |> List.map (eval' >> fst)
         ListValue v, ctx
     | Application (f, args) -> apply ctx f args
-    | Binary _ -> invalidOp "Not yet implemented"
+    | Binary (l, op, r) -> 
+        // This is just a hack to get this working, for now!
+        let l', r' = fst (eval' l), fst (eval' r)
+        match l', r' with 
+        | ConstValue (ConstNumber l), ConstValue (ConstNumber r) -> 
+            match op with 
+            | "<" -> ConstValue (ConstBool (l < r)), ctx
+            | ">" -> ConstValue (ConstBool (l > r)), ctx
+            | _ -> failwith "not yet implemented"
+        | _ -> failwith "not yet implemented"
 
 // FUNCTION Application 101: 
 // Given an expression f
@@ -122,7 +135,7 @@ let rec eval ctx expr =
 //        which will hold variables of previously curried functions (if any) - This is how to APPLY. 
 
 and apply ctx f args =
-    let g = fst >> getFunc
+    // let g = fst >> getFunc
     let func, _ = eval ctx f // do I need a ctx from this call?
     if not $ churchable func
     then failwith "This value is not a function and cannot be applied." 
@@ -132,7 +145,6 @@ and apply ctx f args =
         
         if aLen > pLen // more args than required?
         then
-            // printfn "here o"
             // Check if this "function value" returns a function
             // if it does, apply arguments one by one 
             let _, _, Thunk thunk = getFunc func
@@ -152,7 +164,7 @@ and apply ctx f args =
             let arguments, context, thunk = getFunc func
             let values = 
                 args 
-                |> List.map (eval ctx >> fst) // Eval args 
+                |> List.map (eval ctx >> fst) // Eval all arguments egerly
             let names, rest = List.splitAt aLen arguments
             let context' = assoc names values
             let enviroment = 
@@ -167,3 +179,14 @@ and apply ctx f args =
                But it must be applied with the right env. 
             *)
             else eval enviroment (unThunk thunk) 
+
+let id' =
+    Builtin $ function [x] -> fst $ eval empty x | _ -> failwith ""
+
+let map' = 
+    Builtin $ function
+              | [f; List l] ->
+                l 
+                |> List.map (List.singleton >> apply empty f >> fst)
+                |> ListValue
+              | _ -> failwith ""

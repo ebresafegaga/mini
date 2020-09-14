@@ -6,13 +6,13 @@ type Kind =
     | Num of float
     | QuotedId of string
     | Plus
-    | Minus 
+    | Minus
     | Star
     | Slash
     | GreaterThan 
-    | LessThan 
+    | LessThan
     | Equals
-    | FuncArrow
+    | FuncArrow // Also GreaterThanOrEquals
     | Builtin of string  
     | OpenSquareBracket
     | CloseSquareBraket
@@ -32,11 +32,12 @@ type Token =
     { Range: Range 
       Kind : Kind }
 
-let keywords = ["fn"; "let"; "rec"; "in"; "#t"; "#f"]
+let keywords = 
+    ["fn"; "let"; "rec"; "in"; "#t"; "#f"; "if"; "else"; "then"]
 let builtinKeywords =
     ["sin"; "cos"; "tan"; "map"; "head"; "tail"; "print"; "iterList"; "iterNat"]
 
-// kwd?
+// a keyword?
 let kwd w = 
     keywords 
     |> List.contains w
@@ -48,9 +49,7 @@ let ch l =
     let a = Array.ofList l
     System.String (a, 0, Array.length a)
 
-let sr (s : string) = 
-    s.ToCharArray () 
-    |> List.ofArray
+let sr s = String.toList s
 
 let (|Cond|_|) f p t =
     if List.length t <= p then Some (List.length t, List.last t)
@@ -68,7 +67,7 @@ let rec gopher f p text =
 let ws = System.Char.IsWhiteSpace
 let letter = System.Char.IsLetter
 let digit = System.Char.IsDigit
-let symbol x = System.Char.IsLetter x || x = '#' // A hack, fix later
+let symbol x = System.Char.IsLetter x || x = '#' // A hack; I'll fix later
  
 let rec (|WS|_|) p t = 
     let len = List.length t
@@ -313,7 +312,7 @@ let tokenize text =
 
 // token helpers 
 let isOp = function 
-    | { Kind = Plus | Minus | Star | Slash | Dot } -> true
+    | { Kind = Plus | Minus | Star | Slash | Dot | GreaterThan | LessThan } -> true
     | _ -> false
 
 let opStr = function 
@@ -322,6 +321,8 @@ let opStr = function
     | Star -> "*" 
     | Slash -> "/" 
     | Dot -> "." 
+    | GreaterThan -> ">"
+    | LessThan -> "<"
     |_ -> "<nil>"
 
 let isWs = function
@@ -448,6 +449,7 @@ let rec (|Expression|_|) p tokens =
     | ListExpression p result -> Some result
     | ParenthesizedExpression p result -> Some result  
     | ConstExpression p result
+    | IfExpression p result
     | VariableExpression p result -> Some result
     | UnitExpression p result -> Some result
     | ApplicationExpression p result -> Some result
@@ -466,14 +468,12 @@ and (|PrimaryExpression|_|) p tokens =
 
 and (|ParenthesizedExpression|_|) p tokens =
     match tokens with
-    | Token OpenParenthesis p (p1, tOpen) -> 
-        // printfn "start" 
+    | Token OpenParenthesis p (p1, _) ->  
         match tokens with
         | Expression p1 (p2, expr) ->
             printfn "got %A" expr
             match tokens with
-            | Token CloseParenthesis p2 (p3, tClose) -> 
-                // printfn "end"
+            | Token CloseParenthesis p2 (p3, _) ->
                 Some (p3, expr) 
             | _ ->  None
         | _ ->  None
@@ -489,7 +489,7 @@ and (|NumberExpression|_|) p tokens =
 
 and (|BoolLiteral|_|) p tokens = 
     let t = Kwd "#t" 
-    let f = Kwd "#f" 
+    let f = Kwd "#f"
     match tokens with 
     | Token t p (p, _) -> Some (p, Ast.Const (Ast.ConstBool true))
     | Token f p (p, _) -> Some (p, Ast.Const (Ast.ConstBool false))
@@ -544,14 +544,14 @@ and (|BinaryExpression|_|) p tokens =
     match tokens with
     | PrimaryExpression p (np, e1) ->
         if np >= len then Some (np, e1) 
-        else 
+        else
             match tokens.[np] with 
             | { Kind = k } as op when isOp op ->
                 // printfn "Matched token %A" k;
                 let p = np + 1 // re bind
                 if p >= len then None
-                else 
-                    match tokens with 
+                else
+                    match tokens with
                     | BinaryExpression p (fp, e2) -> Some (fp, Ast.Binary (e1, opStr k, e2))
                     | _ -> None
             | _ -> Some (np, e1) 
@@ -600,9 +600,11 @@ and (|UnitExpression|_|) p tokens =
     // let g = fun _ -> Ast.Unit
     // thisAndThat k k' <!> g
 
+// TODO: SCRAP THE BOILER PLATE OUT OF THIS PATTERN!!!!
 and (|FunctionExpression|_|) p tokens = 
     let pattern = oneOrMore (|VariableExpression|_|)
     let l = Kwd "let"
+    let r = Kwd "rec"
     match tokens with 
     | Token l p (p, _) -> 
         match pattern p tokens with 
@@ -619,7 +621,26 @@ and (|FunctionExpression|_|) p tokens =
                     Some (p3, Ast.Function (name, l, expr))
                 | _ -> None
             | _ ->  None
-        | _ -> None
+        | _ -> 
+            // Maybe it's a rec function
+            match tokens with 
+            | Token r p (p, _) ->
+                match pattern p tokens with 
+                | Some (p1, Ast.Variable name :: ps) -> 
+                    match tokens with 
+                    | Token Equals p1 (p2, _) -> 
+                        match tokens with 
+                        | Expression p2 (p3, expr) -> 
+                            let l = 
+                                ps 
+                                |> List.map (function
+                                            | Ast.Variable n -> n 
+                                            | _ -> failwith "(|FunctionExpression|_|): Internal error")
+                            Some (p3, Ast.RecFunction (name, l, expr))
+                        | _ -> None
+                    | _ ->  None
+                | _ -> None
+            | _ -> None
     | _ -> None 
 
 // alow unit params 
@@ -663,10 +684,8 @@ and (|ApplicationExpression|_|) p tokens =
     let p1 p tokens = 
         match tokens with 
         | VariableExpression p (p1, name) -> 
-            printfn "Parsing arguments now"
             match pattern p1 tokens with 
             | Some (p3, ps) -> 
-                printfn "got %A from mutiple simple exps" ps
                 Some (p3, Ast.Application (name, ps))
             | _ -> None
         | _ -> None
@@ -679,6 +698,24 @@ and (|ApplicationExpression|_|) p tokens =
         | _ -> None
 
     thisOrThat p1 p2 p tokens 
+
+and (|IfExpression|_|) p tokens = 
+    let if', then', else' = Kwd "if", Kwd "then", Kwd "else"
+
+    let i =  (|Token|_|) if' <!> const' Ast.Unit
+    let t =  (|Token|_|) then' <!> const' Ast.Unit
+    let e =  (|Token|_|) else' <!> const' Ast.Unit
+    let expr = (|Expression|_|) 
+    let p1 = thisAndThat i expr
+    let p2 = thisAndThat t expr
+    let p3 = thisAndThat e expr
+
+    let p' = thisAndThat p2 p3 <!> List.collect id
+    let (|Pat|_|) = thisAndThat p1 p' <!> List.collect id
+
+    match tokens with 
+    | Pat p (p, [_;e1;_;e2;_;e3]) -> Some (p, Ast.If (e1, e2, e3))
+    | _ -> None
 
 let filter = List.filter (isWs >> not)
 

@@ -28,6 +28,7 @@ type Const =
 
 type Expression =
     | Unit
+    | If of Expression * Expression * Expression
     | Const of Const
     | Variable of Var
     | Binding of Var * Expression
@@ -35,4 +36,5 @@ type Expression =
     | List of Expression list
     | Lambda of Var list * Expression
     | Function of Var * Var list * Expression
-    | Application of Expression (* Var Exp list *)  * Expression list (* Var Exp *)
+    | RecFunction of Var * Var list * Expression
+    | Application of Expression * Expression list

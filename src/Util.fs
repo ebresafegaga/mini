@@ -1,16 +1,29 @@
 [<AutoOpen>]
-module Util 
+module Util
 
-let (++) list a = list @ [a]
+let (++) list a = list @ [ a ]
 
 let ($) = (<|)
 
-type Map'<'a, 'b> = ('a * 'b) list 
+let const' x = fun _ -> x
 
-module Map = 
-    let union m1 m2 = 
-        let folder k v s = 
-            match Map.tryFind k s with 
+module String =
+    let toList (s: string) = s.ToCharArray () |> List.ofArray
+
+    let foldBack f s b =
+        let s = toList s
+        List.foldBack f s b
+
+// // Simulating GHC's type holes in F#
+// let _f = failwith ""
+
+// let data = List.foldBack _f ["e", 3; "r", 4] 13
+
+module Map =
+    let union m1 m2 =
+        let folder k v s =
+            match Map.tryFind k s with
             | Some _ -> s
             | None -> Map.add k v s
+
         Map.foldBack folder m1 m2
