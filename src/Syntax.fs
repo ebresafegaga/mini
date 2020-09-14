@@ -702,6 +702,7 @@ and (|ApplicationExpression|_|) p tokens =
 and (|IfExpression|_|) p tokens = 
     let if', then', else' = Kwd "if", Kwd "then", Kwd "else"
 
+    // Patterns to match 
     let i =  (|Token|_|) if' <!> const' Ast.Unit
     let t =  (|Token|_|) then' <!> const' Ast.Unit
     let e =  (|Token|_|) else' <!> const' Ast.Unit
@@ -709,7 +710,6 @@ and (|IfExpression|_|) p tokens =
     let p1 = thisAndThat i expr
     let p2 = thisAndThat t expr
     let p3 = thisAndThat e expr
-
     let p' = thisAndThat p2 p3 <!> List.collect id
     let (|Pat|_|) = thisAndThat p1 p' <!> List.collect id
 
@@ -722,11 +722,6 @@ let filter = List.filter (isWs >> not)
 let parse tokens = 
     match tokens with 
     | Expression 0 result -> snd result 
-    | _ -> failwith "Syntax error!"
-
-let parse2 tokens = 
-    match tokens with 
-    | Expression 0 result -> result 
     | _ -> failwith "Syntax error!"
 
 // To add 
@@ -763,10 +758,6 @@ let (|Op|_|) kind p tokens =
     match tokens with
     | Token kind p (np, op) -> Some (np, tokToOp op)
     | _ -> None
-
-
-let (|A|_|) =  oneOrMoreSepStrict (|PrimaryExpression|_|) ((|Token|_|) Comma) <!> id
-let (|B|_|) = oneOrMoreSepStrict (|PrimaryExpression|_|) ((|Token|_|) DotDot)
 
 let rec flatten expr =
     match expr with 
