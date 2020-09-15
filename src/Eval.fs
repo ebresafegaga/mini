@@ -105,7 +105,9 @@ let rec eval ctx expr =
         let ctx' = addVar (name, func) ctx 
         func, ctx'
     | List exprs ->
-        let v = exprs |> List.map (eval' >> fst)
+        let v = 
+            exprs 
+            |> List.map (eval' >> fst)
         ListValue v, ctx
     | Application (f, args) -> apply ctx f args
     | Binary (l, op, r) -> 
@@ -163,16 +165,16 @@ and apply ctx f args =
             let curry = aLen < pLen
             let arguments, context, thunk = getFunc func
             let values = 
-                args 
+                args
                 |> List.map (eval' >> fst) // Eval all arguments eagerly
             let names, rest = List.splitAt aLen arguments
             let context' = assoc names values
             let enviroment =
                 // 
                 (addCtx context ctx)
-                |> addCtx context' 
-               
+                |> addCtx context'             
 
+            assert (List.isEmpty >> not $ rest)
             let value = FuncValue (rest, enviroment, thunk), ctx
             
             if curry then value
@@ -180,7 +182,7 @@ and apply ctx f args =
                aLen = pLen, is a simple function application, see step 6. 
                But it must be applied with the right env. 
             *)
-            else eval enviroment (unThunk thunk) 
+            else eval enviroment (unThunk thunk)
 
 let id' =
     Builtin $ function [x] -> fst $ eval empty x | _ -> failwith ""
