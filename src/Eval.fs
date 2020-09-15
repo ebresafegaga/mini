@@ -26,7 +26,7 @@ let mapContext f (Env g) =
     let k s = Option.map f (g s)
     Env k
 
-let unwrapContext (Env f) = f
+let unEnv (Env f) = f
 
 let empty = Env (const' None)
 
@@ -95,14 +95,14 @@ let rec eval ctx expr =
         // let value, _ = eval ctx expr
         FuncValue (vars, ctx, Thunk expr), ctx
     | Function (name, vars, expr) ->
+        // Remove the current name from this function
+        let ctx = Env $ fun x -> if x = name then None else unEnv ctx x
         let func = FuncValue (vars, ctx, Thunk expr)
         let ctx' = addVar (name, func) ctx 
         func, ctx'
     | RecFunction (name, vars, expr) ->
-        // To Support recursion, not yet tested
-        let rec me = FuncValue (vars, ctx', Thunk expr)
-        and ctx' = addVar (name, me) ctx 
-        let func = FuncValue (vars, ctx', Thunk expr)
+        let func = FuncValue (vars, ctx, Thunk expr)
+        let ctx' = addVar (name, func) ctx 
         func, ctx'
     | List exprs ->
         let v = exprs |> List.map (eval' >> fst)
@@ -135,7 +135,7 @@ let rec eval ctx expr =
 //        which will hold variables of previously curried functions (if any) - This is how to APPLY. 
 
 and apply ctx f args =
-    // let g = fst >> getFunc
+    let eval' = eval ctx 
     let func, _ = eval ctx f // do I need a ctx from this call?
     if not $ churchable func
     then failwith "This value is not a function and cannot be applied." 
@@ -164,12 +164,14 @@ and apply ctx f args =
             let arguments, context, thunk = getFunc func
             let values = 
                 args 
-                |> List.map (eval ctx >> fst) // Eval all arguments egerly
+                |> List.map (eval' >> fst) // Eval all arguments eagerly
             let names, rest = List.splitAt aLen arguments
             let context' = assoc names values
-            let enviroment = 
-                addCtx context' context
-                |> addCtx ctx
+            let enviroment =
+                // 
+                (addCtx context ctx)
+                |> addCtx context' 
+               
 
             let value = FuncValue (rest, enviroment, thunk), ctx
             
