@@ -1,5 +1,32 @@
 #load "Util.fs"
 
+
+// 
+// Basic Expresions
+//
+type Var = string
+
+type Const = 
+    | ConstString of string
+    | ConstNumber of float
+    | ConstBool of bool
+
+type Expression =
+    | Unit
+    | If of Expression * Expression * Expression
+    | Const of Const
+    | Variable of Var
+    | Binding of Var * Expression
+    | Binary of Expression * Var * Expression
+    | List of Expression list
+    | Lambda of Var list * Expression
+    | Function of Var * Var list * Expression
+    | RecFunction of Var * Var list * Expression
+    | Application of Expression * Expression list
+
+//
+// Types 
+//
 type Tvar = string 
 
 type Type =
@@ -40,8 +67,8 @@ let rec applySubtToType ty (subst: Subst) =
     | TyVar a -> 
         match Map.tryFind a subst with 
         | Some x -> x 
-        | None -> ty 
-    | TyFunc (arg, ret) -> 
+        | None -> ty
+    | TyFunc (arg, ret) ->
         TyFunc (applySubtToType arg subst, applySubtToType ret subst)
 
 let extendSubst (subst: Subst) (tvar: Tvar) ty = 
