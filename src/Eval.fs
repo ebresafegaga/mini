@@ -55,20 +55,20 @@ let churchable = function
     | UnitValue | FuncValue _
     | ListValue _ -> false
 
-let countParams = function
-    | FuncValue (ps, _, _) -> List.length ps
-    | ConstValue _
-    | UnitValue | FuncValue _
-    | ListValue _ -> 0
+// let countParams = function
+//     | FuncValue (ps, _, _) -> List.length ps
+//     | ConstValue _
+//     | UnitValue | FuncValue _
+//     | ListValue _ -> 0
 
 let getFunc = function
     | FuncValue (arg, env, expr) -> arg, env, expr
     | ConstValue _
     | UnitValue | FuncValue _
-    | ListValue _ -> [], empty, Thunk Unit
+    | ListValue _ -> "", empty, Thunk Unit
 
 let isThunkFunc = function
-    | Thunk (Fn _) | Thunk (Lambda _) -> true 
+    | Thunk (Lambda _) | Thunk (Lambda _) -> true 
     | _ -> false
 
 let rec eval ctx expr =
@@ -91,12 +91,11 @@ let rec eval ctx expr =
     | Binding (a, expr) ->
         let value, newCtx = eval ctx expr 
         UnitValue, addVar (a, value) newCtx
-    | Lambda (vars, expr) ->
-        // let value, _ = eval ctx expr
-        FuncValue (vars, ctx, Thunk expr), ctx
+    | Lambda (a, expr) ->
+        FuncValue (a, ctx, Thunk expr), ctx
     | List exprs ->
         let v = 
-            exprs 
+            exprs
             |> List.map (eval' >> fst)
         ListValue v, ctx
     | Application (f, args) -> apply ctx f args
@@ -133,9 +132,8 @@ and apply ctx f args =
     then failwith "This value is not a function and cannot be applied." 
     else
         let aLen = List.length args
-        let pLen = countParams func
-        
-        if aLen > pLen // more args than required?
+        // let pLen = countParams func     
+        if aLen > 1 // more args than required?
         then
             // Check if this "function value" returns a function
             // if it does, apply arguments one by one 
@@ -152,27 +150,28 @@ and apply ctx f args =
         else
             // Curry this application.
             // TODO: Fail when args have the same name
-            let curry = aLen < pLen
-            let arguments, context, thunk = getFunc func
-            let values = 
-                args
-                |> List.map (eval' >> fst) // Eval all arguments eagerly
-            let names, rest = List.splitAt aLen arguments
-            let context' = assoc names values
+            // let curry = aLen < pLen
+            let argument, context, thunk = getFunc func
+            let value = (eval' >> fst) $ List.head args
+            // let values = 
+            //     args
+            //     |> List.map (eval' >> fst) // Eval all arguments eagerly
+            // let names, rest = List.splitAt aLen arguments
+            // let context' = assoc names value
             let enviroment =
-                // 
                 (addCtx context ctx)
-                |> addCtx context'             
+                |> addVar (argument, value)          
 
-            assert (List.isEmpty >> not $ rest)
-            let value = FuncValue (rest, enviroment, thunk), ctx
+            // assert (List.isEmpty >> not $ rest)
+            // let value = FuncValue (rest, enviroment, thunk), ctx
             
-            if curry then value
-            (* 
-               aLen = pLen, is a simple function application, see step 6. 
-               But it must be applied with the right env. 
-            *)
-            else eval enviroment (unThunk thunk)
+            // if curry then value
+            // (* 
+            //    aLen = pLen, is a simple function application, see step 6. 
+            //    But it must be applied with the right env. 
+            // *)
+            // else 
+            eval enviroment (unThunk thunk)
 
 let id' =
     Builtin $ function [x] -> fst $ eval empty x | _ -> failwith ""

@@ -35,7 +35,6 @@ type Expression =
     | Binary of Expression * Var * Expression
     | List of Expression list
     | Lambda of Var * Expression
-    | Fn 
     | Application of Expression * Expression list
 
 /// Transform a list of variable names and an expression body to a lambda calculus style function
