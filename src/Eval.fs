@@ -112,18 +112,13 @@ let rec eval ctx expr =
 
 // FUNCTION Application 101: 
 // Given an expression f
-// 1 : Determine if f is a churchable (if it evaluates to a function)
-// 2 : Check how many args f takes - params 
-// 3 : Check how many args given - args 
-// 4 : If args > params
+// 1 : Determine if f is a churchable - Yes that's a real thing!
+// 2 : let args = < number of arguments given to f >
+// 3 : If args > 1
 //         check if f returns a function
 //         if it does, apply arguments one by one 
 //         if it doesn't fail
-// 5 : If args < parms, return a curried function  **
-// 6 : If equal, *apply* 
-// NOTE : if f returns a lambda - g, add args to g's context **
-//        Finally, when args = params, make sure we eval the thunk with the "deepest" context 
-//        which will hold variables of previously curried functions (if any) - This is how to APPLY. 
+// 5: This function is being applied with one argument (as it should be), just eval the body
 
 and apply ctx f args =
     let eval' = eval ctx 
@@ -131,14 +126,12 @@ and apply ctx f args =
     if not $ churchable func
     then failwith "This value is not a function and cannot be applied." 
     else
-        let aLen = List.length args
-        // let pLen = countParams func     
-        if aLen > 1 // more args than required?
+        let aLen = List.length args   
+        if aLen > 1 // More args than required? - Yes, functions can have only 1 arguments. (Thank you, Alonzo Church!)
         then
             // Check if this "function value" returns a function
             // if it does, apply arguments one by one 
             let _, _, Thunk thunk = getFunc func
-            // let v = eval context e |> fst  // v |> churchable |> not // Noooooooooooo
             if  not $ isThunkFunc (Thunk thunk)
             then failwith "This value is not a function and cannot be applied."
             else
@@ -148,29 +141,13 @@ and apply ctx f args =
                     |> getFunc
                 apply (addCtx env ctx) thunk (List.tail args)
         else
-            // Curry this application.
-            // TODO: Fail when args have the same name
-            // let curry = aLen < pLen
             let argument, context, thunk = getFunc func
             let value = (eval' >> fst) $ List.head args
-            // let values = 
-            //     args
-            //     |> List.map (eval' >> fst) // Eval all arguments eagerly
-            // let names, rest = List.splitAt aLen arguments
-            // let context' = assoc names value
+
             let enviroment =
                 (addCtx context ctx)
                 |> addVar (argument, value)          
 
-            // assert (List.isEmpty >> not $ rest)
-            // let value = FuncValue (rest, enviroment, thunk), ctx
-            
-            // if curry then value
-            // (* 
-            //    aLen = pLen, is a simple function application, see step 6. 
-            //    But it must be applied with the right env. 
-            // *)
-            // else 
             eval enviroment (unThunk thunk)
 
 let id' =
