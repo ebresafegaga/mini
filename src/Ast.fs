@@ -34,15 +34,18 @@ type Expression =
     | Binding of Var * Expression
     | Binary of Expression * Var * Expression
     | List of Expression list
-    | Lambda of Var list * Expression
-    | Fn of Var * Expression
-    | RecFn of Var * Var list * Expression
+    | Lambda of Var * Expression
+    | Fn 
     | Application of Expression * Expression list
 
 /// Transform a list of variable names and an expression body to a lambda calculus style function
 let transform x body =
     (x, body)
-        ||> List.foldBack (fun a s -> Fn (a, s)) 
+        ||> List.foldBack (fun a s -> Lambda (a, s)) 
+
+// let fnToRec = function
+//     | Fn (a, b) -> Some (RecFn (a, b))
+//     | _ -> None
 
 // let e = Variable "x"
 // let vl = ["a";"x";"c";"d";"e"]

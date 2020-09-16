@@ -618,29 +618,10 @@ and (|FunctionBinding|_|) p tokens =
                         |> List.map (function
                                     | Ast.Variable n -> n
                                     | _ -> failwith "(|FunctionExpression|_|): Internal error")
-                    Some (p3, Ast.Function (name, l, expr))
+                    Some (p3, Ast.Binding (name, Ast.transform l expr))
                 | _ -> None
             | _ ->  None
-        | _ -> 
-            // Maybe it's a rec function
-            match tokens with 
-            | Token r p (p, _) ->
-                match pattern p tokens with 
-                | Some (p1, Ast.Variable name :: ps) -> 
-                    match tokens with 
-                    | Token Equals p1 (p2, _) -> 
-                        match tokens with 
-                        | Expression p2 (p3, expr) -> 
-                            let l = 
-                                ps 
-                                |> List.map (function
-                                            | Ast.Variable n -> n 
-                                            | _ -> failwith "(|FunctionExpression|_|): Internal error")
-                            Some (p3, Ast.RecFunction (name, l, expr))
-                        | _ -> None
-                    | _ ->  None
-                | _ -> None
-            | _ -> None
+        | _ -> None 
     | _ -> None 
 
 // alow unit params 
@@ -660,7 +641,7 @@ and (|LambdaExpression|_|) p tokens =
                             |> List.map (function 
                                         | Ast.Variable n -> n 
                                         | _ -> failwith "(|FunctionExpression|_|): Internal error")
-                    Some (p4, Ast.Lambda (l, expr))
+                    Some (p4, Ast.transform l expr)
                 | _ -> None 
             | _ -> None 
         | _ -> None 

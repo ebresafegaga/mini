@@ -18,7 +18,7 @@ and Value =
     | ConstValue of Const 
     | ListValue of Value list
     | UnitValue
-    | FuncValue of string list * Env * Thunk
+    | FuncValue of string * Env * Thunk
 
 let unThunk (Thunk thunk) = thunk
 
@@ -68,7 +68,7 @@ let getFunc = function
     | ListValue _ -> [], empty, Thunk Unit
 
 let isThunkFunc = function
-    | Thunk (Function _) | Thunk (Lambda _) -> true 
+    | Thunk (Fn _) | Thunk (Lambda _) -> true 
     | _ -> false
 
 let rec eval ctx expr =
@@ -94,16 +94,6 @@ let rec eval ctx expr =
     | Lambda (vars, expr) ->
         // let value, _ = eval ctx expr
         FuncValue (vars, ctx, Thunk expr), ctx
-    | Function (name, vars, expr) ->
-        // Remove the current name from this function
-        let ctx = Env $ fun x -> if x = name then None else unEnv ctx x
-        let func = FuncValue (vars, ctx, Thunk expr)
-        let ctx' = addVar (name, func) ctx 
-        func, ctx'
-    | RecFunction (name, vars, expr) ->
-        let func = FuncValue (vars, ctx, Thunk expr)
-        let ctx' = addVar (name, func) ctx 
-        func, ctx'
     | List exprs ->
         let v = 
             exprs 
