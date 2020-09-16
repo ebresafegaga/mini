@@ -12,13 +12,10 @@ type Const =
     | ConstBool of bool
 
 type Expression =
-    | Unit
     | If of Expression * Expression * Expression
     | Const of Const
     | Variable of Var
     | Binding of Var * Expression
-    | Binary of Expression * Var * Expression
-    | List of Expression list
     | Lambda of Var list * Expression
     | Function of Var * Var list * Expression
     | RecFunction of Var * Var list * Expression
@@ -107,13 +104,51 @@ let rec unifier ty1 ty2 subst exp =
             then extendSubst subst t2 ty1 
             else failwithf "occurs check failed t1: %A, t2: %A in %A"  ty2 ty1 exp
         | TyFunc (a1, r1), TyFunc (a2, r2) -> 
-            let s = unifier a1 a2 subst exp
+            let s = unifier a1 a2 subst exp // Do we really need to give the next function our substituition???
             let s' = unifier r1 r2 s exp 
             s'
         | _ -> failwithf "Cannot unify type %A with type %A in %A" ty1 ty2 exp
+
+type Answer = Type * Subst
+
+type Tenv = Map<string, Type>
+
+type OptionalType = Option<Type> 
 
 let freshTvarType = 
     let sn = ref 0 
     fun () -> 
         sn := !sn + 1 
         TyVar $ "a" + (string sn)
+
+let optypeToType (o: OptionalType) = 
+    match o with 
+    | None -> freshTvarType ()
+    | Some x -> x
+
+
+let rec getType exp (tenv: Tenv) (subst: Subst) = 
+    match exp with
+    | Const (ConstNumber _) -> TyNumber, subst
+    | Const (ConstBool _) -> TyBool, subst
+    | Const (ConstString _) -> TyString, subst
+    | Variable n -> 
+        match Map.tryFind n tenv with 
+        | Some x -> x, subst
+        | None -> failwithf "unbound variable %A" n
+    | If (e1, e2, e3) ->
+        let ty1, s1 = getType e1 tenv subst    
+        let s' = unifier ty1 TyBool s1 e1
+
+        let ty2, s2 = getType e2 tenv s'
+        let ty3, s3 = getType e3 tenv s2
+
+        let subst = unifier ty2 ty3 s3 exp
+        ty2, subst
+    | Binding (name, exp) -> 
+        // Add name to type envriroment with typ1
+        let ty1, s1 = getType exp tenv subst
+        ty1, s1
+    | Function (name, args, body) -> 
+        
+        failwith ""

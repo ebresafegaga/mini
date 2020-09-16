@@ -443,7 +443,7 @@ let (|Token|_|) value position tokens =
 let rec (|Expression|_|) p tokens = 
     match tokens with 
     | BindingExpression p result -> Some result 
-    | FunctionExpression p result -> Some result 
+    | FunctionBinding p result -> Some result 
     | LambdaExpression p result -> Some result  
     | BinaryExpression p result -> Some result
     | ListExpression p result -> Some result
@@ -471,7 +471,6 @@ and (|ParenthesizedExpression|_|) p tokens =
     | Token OpenParenthesis p (p1, _) ->  
         match tokens with
         | Expression p1 (p2, expr) ->
-            printfn "got %A" expr
             match tokens with
             | Token CloseParenthesis p2 (p3, _) ->
                 Some (p3, expr) 
@@ -552,7 +551,8 @@ and (|BinaryExpression|_|) p tokens =
                 if p >= len then None
                 else
                     match tokens with
-                    | BinaryExpression p (fp, e2) -> Some (fp, Ast.Binary (e1, opStr k, e2))
+                    | BinaryExpression p (fp, e2) -> 
+                        Some (fp, Ast.Binary (e1, opStr k, e2))
                     | _ -> None
             | _ -> Some (np, e1) 
     | _ -> None
@@ -601,7 +601,7 @@ and (|UnitExpression|_|) p tokens =
     // thisAndThat k k' <!> g
 
 // TODO: SCRAP THE BOILER PLATE OUT OF THIS PATTERN!!!!
-and (|FunctionExpression|_|) p tokens = 
+and (|FunctionBinding|_|) p tokens = 
     let pattern = oneOrMore (|VariableExpression|_|)
     let l = Kwd "let"
     let r = Kwd "rec"
@@ -610,13 +610,13 @@ and (|FunctionExpression|_|) p tokens =
         match pattern p tokens with 
         | Some (p1, Ast.Variable name :: ps) -> 
             match tokens with 
-            | Token Equals p1 (p2, eq) -> 
+            | Token Equals p1 (p2, _) -> 
                 match tokens with 
                 | Expression p2 (p3, expr) -> 
                     let l = 
                         ps 
                         |> List.map (function
-                                    | Ast.Variable n -> n 
+                                    | Ast.Variable n -> n
                                     | _ -> failwith "(|FunctionExpression|_|): Internal error")
                     Some (p3, Ast.Function (name, l, expr))
                 | _ -> None
@@ -649,11 +649,11 @@ and (|LambdaExpression|_|) p tokens =
     let fn = Kwd "fn" 
     
     match tokens with 
-    | Token fn p (p1, tok) -> 
+    | Token fn p (p1, _) -> 
         match pattern p1 tokens with 
         | Some (p2, ps) ->
             match tokens with 
-            | Token FuncArrow p2 (p3, arrow) -> 
+            | Token FuncArrow p2 (p3, _) -> 
                 match tokens with 
                 | Expression p3 (p4, expr) -> 
                     let l = ps 
@@ -702,6 +702,7 @@ and (|ApplicationExpression|_|) p tokens =
 and (|IfExpression|_|) p tokens = 
     let if', then', else' = Kwd "if", Kwd "then", Kwd "else"
 
+    // TODO: create helpers to make this neater 
     // Patterns to match 
     let i =  (|Token|_|) if' <!> const' Ast.Unit
     let t =  (|Token|_|) then' <!> const' Ast.Unit
@@ -758,22 +759,3 @@ let (|Op|_|) kind p tokens =
     match tokens with
     | Token kind p (np, op) -> Some (np, tokToOp op)
     | _ -> None
-
-let rec flatten expr =
-    match expr with 
-    | Ast.Binary (e1, op, e2) -> flatten e1 @ [Ast.Variable op] @ flatten e2
-    | _ -> [expr]
-
-let table = []
-
-let precedence key =
-    let map = Map.ofList table
-    let d = map |> Map.tryFind key
-    match d with 
-    | Some x -> x
-    | None -> 0
-
-let rec binaryExpr tokens = 
-    // Start 
-    
-    ()

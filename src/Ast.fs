@@ -35,6 +35,16 @@ type Expression =
     | Binary of Expression * Var * Expression
     | List of Expression list
     | Lambda of Var list * Expression
-    | Function of Var * Var list * Expression
-    | RecFunction of Var * Var list * Expression
+    | Fn of Var * Expression
+    | RecFn of Var * Var list * Expression
     | Application of Expression * Expression list
+
+/// Transform a list of variable names and an expression body to a lambda calculus style function
+let transform x body =
+    (x, body)
+        ||> List.foldBack (fun a s -> Fn (a, s)) 
+
+// let e = Variable "x"
+// let vl = ["a";"x";"c";"d";"e"]
+
+// let curried = f vl e
