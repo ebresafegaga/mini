@@ -705,38 +705,3 @@ let parse tokens =
     match tokens with 
     | Expression 0 result -> snd result 
     | _ -> failwith "Syntax error!"
-
-// To add 
-
-let (|Tok|_|) value position tokens = 
-    let len = List.length tokens
-    if position >= len then None 
-    else
-        match value position tokens with 
-        | Some _ as v -> v 
-        | _ -> None
-
-let tokToOp = 
-    function
-    | { Kind = Plus } -> Some Ast.Addition
-    | { Kind = Minus } -> Some Ast.Substraction
-    | { Kind = Star } -> Some Ast.Multiplication
-    | { Kind = Slash } -> Some Ast.Division
-    | { Kind = Dot } -> Some Ast.Compose
-    | _ -> None
-
-let (|AnyOp|_|) p tokens =
-    let len = List.length tokens
-    if p >= len then None
-    else
-        match tokens.[p] with
-        | { Kind = Plus | Minus | Star | Slash } as tok ->
-            match tokToOp tok with
-            | Some x -> Some (p+1, x)
-            | None -> None
-        | _ -> None
-
-let (|Op|_|) kind p tokens =
-    match tokens with
-    | Token kind p (np, op) -> Some (np, tokToOp op)
-    | _ -> None

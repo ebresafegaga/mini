@@ -2,17 +2,14 @@ module Eval
 
 open Ast
 
-//
-// Enviroment is an f.
-// Where f is a function that when given a name returns a value or not.
-//
+
 type Thunk = Thunk of Expression
 
 type Function =
     | Defined of string list * Env * Thunk
     | Builtin of (Expression list -> Value)
 
-and Env = Env of (string -> Value option)
+and Env = Env of (string -> Value option) // Yes, the enviroment is a function
 
 and Value =
     | ConstValue of Const 
@@ -43,23 +40,12 @@ let addCtx (Env f) (Env g) =
         | Some _ as v -> v
     Env k
 
-// create a context from a list of string and corresponding values
-let assoc sl vs =
-    (sl, vs)
-    ||> List.fold2 (fun s arg value -> addVar (arg, value) s) empty
-
 /// Is this value a function? 
 let churchable = function
     | FuncValue _ -> true
     | ConstValue _
     | UnitValue | FuncValue _
     | ListValue _ -> false
-
-// let countParams = function
-//     | FuncValue (ps, _, _) -> List.length ps
-//     | ConstValue _
-//     | UnitValue | FuncValue _
-//     | ListValue _ -> 0
 
 let getFunc = function
     | FuncValue (arg, env, expr) -> arg, env, expr
@@ -149,14 +135,3 @@ and apply ctx f args =
                 |> addVar (argument, value)          
 
             eval enviroment (unThunk thunk)
-
-let id' =
-    Builtin $ function [x] -> fst $ eval empty x | _ -> failwith ""
-
-let map' = 
-    Builtin $ function
-              | [f; List l] ->
-                l 
-                |> List.map (List.singleton >> apply empty f >> fst)
-                |> ListValue
-              | _ -> failwith ""
