@@ -32,5 +32,4 @@ type Expression =
 
 /// Transform a list of variable names and an expression body to a lambda calculus style function
 let transform x body =
-    (x, body)
-        ||> List.foldBack (fun a s -> Lambda (a, s))
+    List.foldBack (uncurry Lambda) x body

@@ -3,19 +3,19 @@ module Eval
 open Ast
 
 
-type Thunk = Thunk of Expression
-
-type Function =
-    | Defined of string list * Env * Thunk
-    | Builtin of (Expression list -> Value)
-
-and Env = Env of (string -> Value option) // Yes, the enviroment is a function
+type Env = Env of (Name -> Value option) // Yes, the enviroment is a function
 
 and Value =
     | ConstValue of Const 
     | ListValue of Value list
     | UnitValue
-    | FuncValue of string * Env * Thunk
+    | FuncValue of Name * Env * Thunk
+
+and Thunk = Thunk of Expression
+
+and Function =
+    | Defined of Name * Env * Thunk
+    | Builtin of (Env -> Expression -> Value)
 
 let unThunk (Thunk thunk) = thunk
 
@@ -135,3 +135,14 @@ and apply ctx f args =
                 |> addVar (argument, value)          
 
             eval enviroment (unThunk thunk)
+
+let rec builtin ctx f args =
+    match f with 
+    | Builtin g -> g ctx args
+    | _ -> failwith "f is not a builtin function"
+
+
+let map ctx =
+    fun f list ->
+        let len = List.length list 
+        ()
