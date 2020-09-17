@@ -15,7 +15,7 @@ and Thunk = Thunk of Expression
 
 and Function =
     | Defined of Name * Env * Thunk
-    | Builtin of (Value list -> Value)
+    | Builtin of (Env -> Expression list -> Value)
 
 let unThunk (Thunk thunk) = thunk
 
@@ -67,8 +67,9 @@ let rec eval ctx expr =
         match f v with
         | Some x -> x, ctx
         | None ->
-            // TODO: Handle built-in operators
-            failwithf "Unbound value %s" v
+            match v with 
+            | GetBuiltin v -> v, ctx
+            | _ -> failwithf "Unbound value %s" v
     | If (exp, if', else') -> 
         match fst $ eval' exp with 
         | ConstValue (ConstBool v) -> 
@@ -138,8 +139,20 @@ and apply ctx f args =
 
                 eval enviroment thunk
         | FuncValue (Builtin f) -> 
-            let args' = 
-                args 
-                |> List.map (eval' >> fst)
-            f args', ctx
-        | _ -> failwith "This is not a value and cannot be applied"
+            f ctx args, ctx
+        | _ -> failwith "This value is not a function and cannot be applied"
+
+and builtin = function 
+    | "map" -> Some (FuncValue (Builtin builtinMap))
+    | _ -> None 
+
+and (|GetBuiltin|_|) = builtin
+
+and builtinMap env values  =
+    match values with
+    | [f; List list] ->
+        let v =
+            list
+            |> List.map (List.singleton >> apply env f >> fst)
+        ListValue v
+    | _ -> failwith "invalid number of arguments"

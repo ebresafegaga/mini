@@ -18,7 +18,8 @@ module String =
         let s = toList s
         List.foldBack f s b
 
-// Simulating GHC's type holes in F#
+// Simulating GHC's type holes in F# with good ol' ML Value restriction 
+// And (VS Code or Vim) Ionide Extention for seeing the type signatures right in the editor
 // let _f = failwith ""
 
 // let data = List.foldBack (fun x -> _f) ["e", 3; "r", 4] 13
