@@ -17,7 +17,7 @@ type Expression =
     | Variable of Var
     | Binding of Var * Expression
     | Lambda of Var * Expression
-    | Application of Expression * Expression list
+    | App of Expression * Expression
 
 //
 // Types 
@@ -87,7 +87,7 @@ let rec noOccursCheck (tvar: Tvar) ty =
         noOccursCheck tvar arg && noOccursCheck tvar ret
     | TyVar a -> a <> tvar
 
-let rec unifier ty1 ty2 subst exp =
+let rec unifier ty1 ty2 subst (exp: Expression) =
     let ty1 = applySubtToType ty1 subst
     let ty2 = applySubtToType ty2 subst 
     if ty1 = ty2 then (* a trivial equation *) subst
@@ -110,6 +110,11 @@ let rec unifier ty1 ty2 subst exp =
 type Answer = Type * Subst
 
 type Tenv = Map<string, Type>
+let emptyTenv : Tenv = Map.empty
+
+let extendTypeEnv  name ty (tenv: Tenv) : Tenv =
+    tenv 
+    |> Map.add name ty
 
 type OptionalType = Option<Type> 
 
@@ -117,7 +122,7 @@ let freshTvarType =
     let sn = ref 0 
     fun () -> 
         sn := !sn + 1 
-        TyVar $ "a" + (string sn)
+        TyVar $ "a" + (string !sn)
 
 let optypeToType (o: OptionalType) = 
     match o with 
@@ -147,6 +152,19 @@ let rec getType exp (tenv: Tenv) (subst: Subst) =
         // Add name to type envriroment with typ1
         let ty1, s1 = getType exp tenv subst
         ty1, s1
-    // | Function (name, args, body) -> 
-        
-    //     failwith ""
+    | Lambda (n, expr) -> 
+        let nty = freshTvarType ()
+        let tenv' = 
+            tenv 
+            |> extendTypeEnv n nty
+        let ty', subst' = getType expr tenv' subst
+        TyFunc (nty, ty'), subst'
+    | App (rator, rand) -> 
+        let returnTy = freshTvarType ()
+        let ratorTy, subst' = getType rator tenv subst
+        let randTy, subst'' = getType rand tenv subst'
+        let s = unifier ratorTy (TyFunc (randTy, returnTy)) subst'' exp
+        returnTy, s
+
+let e = Lambda ("n", Lambda ("x", Const (ConstBool true)))
+let ty = getType e emptyTenv emptySubst

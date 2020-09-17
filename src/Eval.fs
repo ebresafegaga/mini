@@ -142,11 +142,9 @@ and apply ctx f args =
             f ctx args, ctx
         | _ -> failwith "This value is not a function and cannot be applied"
 
-and builtin = function 
+and (|GetBuiltin|_|) = function 
     | "map" -> Some (FuncValue (Builtin builtinMap))
-    | _ -> None 
-
-and (|GetBuiltin|_|) = builtin
+    | _ -> None
 
 and builtinMap env values  =
     match values with
