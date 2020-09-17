@@ -4,19 +4,19 @@
 // 
 // Basic Expresions
 //
-type Var = string
+type Name = string
 
 type Const = 
     | ConstString of string
     | ConstNumber of float
-    | ConstBool of bool
+    | CanstBool of bool
 
 type Expression =
     | If of Expression * Expression * Expression
     | Const of Const
-    | Variable of Var
-    | Binding of Var * Expression
-    | Lambda of Var * Expression
+    | Variable of Name
+    | Binding of Name * Expression
+    | Lambda of Name * Expression
     | App of Expression * Expression
 
 //
@@ -114,21 +114,13 @@ let emptyTenv : Tenv = Map.empty
 
 let extendTypeEnv  name ty (tenv: Tenv) : Tenv =
     tenv 
-    |> Map.add name ty
-
-type OptionalType = Option<Type> 
+    |> Map.add name ty 
 
 let freshTvarType = 
     let sn = ref 0 
     fun () -> 
         sn := !sn + 1 
         TyVar $ "a" + (string !sn)
-
-let optypeToType (o: OptionalType) = 
-    match o with 
-    | None -> freshTvarType ()
-    | Some x -> x
-
 
 let rec getType exp (tenv: Tenv) (subst: Subst) = 
     match exp with
