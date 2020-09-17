@@ -9,13 +9,13 @@ and Value =
     | ConstValue of Const 
     | ListValue of Value list
     | UnitValue
-    | FuncValue of Name * Env * Thunk
+    | FuncValue of Function
 
 and Thunk = Thunk of Expression
 
 and Function =
     | Defined of Name * Env * Thunk
-    | Builtin of (Env -> Expression -> Value)
+    | Builtin of (Value list -> Value)
 
 let unThunk (Thunk thunk) = thunk
 
@@ -47,8 +47,8 @@ let churchable = function
     | UnitValue | FuncValue _
     | ListValue _ -> false
 
-let getFunc = function
-    | FuncValue (arg, env, expr) -> arg, env, expr
+let getDefinedFunc = function
+    | FuncValue (Defined (arg, env, expr)) -> arg, env, expr
     | ConstValue _
     | UnitValue | FuncValue _
     | ListValue _ -> "", empty, Thunk Unit
@@ -78,7 +78,8 @@ let rec eval ctx expr =
         let value, newCtx = eval ctx expr 
         UnitValue, addVar (a, value) newCtx
     | Lambda (a, expr) ->
-        FuncValue (a, ctx, Thunk expr), ctx
+        let lambda = Defined (a, ctx, Thunk expr) |> FuncValue
+        lambda, ctx
     | List exprs ->
         let v = 
             exprs
@@ -112,37 +113,33 @@ and apply ctx f args =
     if not $ churchable func
     then failwith "This value is not a function and cannot be applied." 
     else
-        let aLen = List.length args   
-        if aLen > 1 // More args than required? - Yes, functions can have only 1 arguments. (Thank you, Alonzo Church!)
-        then
-            // Check if this "function value" returns a function
-            // if it does, apply arguments one by one 
-            let _, _, Thunk thunk = getFunc func
-            if  not $ isThunkFunc (Thunk thunk)
-            then failwith "This value is not a function and cannot be applied."
+        match func with 
+        | FuncValue (Defined (argument, context, Thunk thunk)) -> 
+            let aLen = List.length args   
+            if aLen > 1 // More args than required? - Yes, functions can have only 1 arguments. (Thank you, Alonzo Church!)
+            then
+                // Check if this "function value" returns a function
+                // if it does, apply arguments one by one 
+                if  not $ isThunkFunc (Thunk thunk)
+                then failwith "This value is not a function and cannot be applied."
+                else
+                    let _, env, _ =
+                        apply ctx f [List.head args] 
+                        |> fst 
+                        |> getDefinedFunc
+                    apply (addCtx env ctx) thunk (List.tail args)
             else
-                let _, env, _ = 
-                    apply ctx f [List.head args] 
-                    |> fst 
-                    |> getFunc
-                apply (addCtx env ctx) thunk (List.tail args)
-        else
-            let argument, context, thunk = getFunc func
-            let value = (eval' >> fst) $ List.head args
+                // let argument, context, thunk = getFunc func
+                let value = (eval' >> fst) $ List.head args
 
-            let enviroment =
-                (addCtx context ctx)
-                |> addVar (argument, value)          
+                let enviroment =
+                    (addCtx context ctx)
+                    |> addVar (argument, value)          
 
-            eval enviroment (unThunk thunk)
-
-let rec builtin ctx f args =
-    match f with 
-    | Builtin g -> g ctx args
-    | _ -> failwith "f is not a builtin function"
-
-
-let map ctx =
-    fun f list ->
-        let len = List.length list 
-        ()
+                eval enviroment thunk
+        | FuncValue (Builtin f) -> 
+            let args' = 
+                args 
+                |> List.map (eval' >> fst)
+            f args', ctx
+        | _ -> failwith "This is not a value and cannot be applied"

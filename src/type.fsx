@@ -16,9 +16,7 @@ type Expression =
     | Const of Const
     | Variable of Var
     | Binding of Var * Expression
-    | Lambda of Var list * Expression
-    | Function of Var * Var list * Expression
-    | RecFunction of Var * Var list * Expression
+    | Lambda of Var * Expression
     | Application of Expression * Expression list
 
 //
@@ -149,6 +147,6 @@ let rec getType exp (tenv: Tenv) (subst: Subst) =
         // Add name to type envriroment with typ1
         let ty1, s1 = getType exp tenv subst
         ty1, s1
-    | Function (name, args, body) -> 
+    // | Function (name, args, body) -> 
         
-        failwith ""
+    //     failwith ""
