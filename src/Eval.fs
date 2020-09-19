@@ -151,6 +151,7 @@ and (|GetBuiltin|_|) = function
     | _ -> None
 
 and builtinMap env values =
+    // This function is buggy
     match values with
     | [f; List list] ->
         let v =
@@ -161,20 +162,22 @@ and builtinMap env values =
 
 and builtinCar env values =
     match values with 
-    | [List l] -> 
-        List.head l
-        |> eval env 
-        |> fst
+    | [l] -> 
+        match fst $ eval env l with 
+        | ListValue (x :: xs) -> x 
+        | ListValue [] -> failwith "Attempted to get head of empty list"
+        | _ -> failwith "Invalid arguments"
     | _ -> failwith "invalid number of arguments"
 
 and builtinCdr env values = 
     match values with 
-    | [List l] -> 
-        List.tail l 
-        |> List.map (eval env >> fst)
-        |> ListValue
+    | [l] -> 
+        match fst $ eval env l with 
+        | ListValue (x :: xs) -> ListValue xs
+        | ListValue _ -> failwith "Attempted to get the cdr of an empty list"
+        | _ -> failwith "Invalid arguments"
     | _ -> failwith "invalid number of arguments"
- 
+
 and builtinNull env values = 
     match values with 
     | [x] -> 
@@ -185,9 +188,9 @@ and builtinNull env values =
     | _ -> failwith "invalid arguments"
 
 and builtinCons env values = 
-    match values with 
+    match values with
     | [x; xs] ->
-        let x, xs = (eval env >> fst) $  xs, (eval env >> fst) x
+        let x, xs = (eval env >> fst) $ xs, (eval env >> fst) x
         match xs with 
         | ListValue xs -> ListValue $ x :: xs
         | _ -> failwith "invalid arguments"
