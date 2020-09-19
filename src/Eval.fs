@@ -186,11 +186,11 @@ and builtinNull env values =
 
 and builtinCons env values = 
     match values with 
-    | [x; List xs] ->
-        x :: xs 
-        |> List
-        |> eval env 
-        |> fst  
+    | [x; xs] ->
+        let x, xs = (eval env >> fst) $  xs, (eval env >> fst) x
+        match xs with 
+        | ListValue xs -> ListValue $ x :: xs
+        | _ -> failwith "invalid arguments"
     | _ -> failwith "invalid arguments"
 
 and trans x = Some $ FuncValue (Builtin x)
