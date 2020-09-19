@@ -190,10 +190,10 @@ and builtinNull env values =
 and builtinCons env values = 
     match values with
     | [x; xs] ->
-        let x, xs = (eval env >> fst) $ xs, (eval env >> fst) x
+        let x, xs = (eval env >> fst) $ x, (eval env >> fst) xs
         match xs with 
         | ListValue xs -> ListValue $ x :: xs
-        | _ -> failwith "invalid arguments"
-    | _ -> failwith "invalid arguments"
+        | _ -> failwithf "Expected a list but got a %A" xs
+    | _ -> failwith "invalid number arguments"
 
 and trans x = Some $ FuncValue (Builtin x)
