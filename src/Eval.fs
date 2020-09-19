@@ -143,10 +143,12 @@ and apply ctx f args =
         | _ -> failwith "This value is not a function and cannot be applied"
 
 and (|GetBuiltin|_|) = function 
-    | "map" -> Some (FuncValue (Builtin builtinMap))
+    | "map" -> trans builtinMap
+    | "car" -> trans builtinCar
+    | "cdr" -> trans builtinCdr
     | _ -> None
 
-and builtinMap env values  =
+and builtinMap env values =
     match values with
     | [f; List list] ->
         let v =
@@ -154,3 +156,21 @@ and builtinMap env values  =
             |> List.map (List.singleton >> apply env f >> fst)
         ListValue v
     | _ -> failwith "invalid number of arguments"
+
+and builtinCar env values =
+    match values with 
+    | [List l] -> 
+        List.head l
+        |> eval env 
+        |> fst
+    | _ -> failwith "invalid number of arguments"
+
+and builtinCdr env values = 
+    match values with 
+    | [List l] -> 
+        List.tail l 
+        |> List.map (eval env >> fst)
+        |> ListValue
+    | _ -> failwith "invalid number of arguments"
+
+and trans x = Some $ FuncValue (Builtin x)
