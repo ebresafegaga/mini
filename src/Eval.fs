@@ -180,4 +180,13 @@ and builtinNull env values =
     | [List _] -> ConstValue (ConstBool false)
     | _ -> failwith "invalid number of arguments"
 
+and builtinCons env values = 
+    match values with 
+    | [x; List xs] ->
+        x :: xs 
+        |> List
+        |> eval env 
+        |> fst  
+    | _ -> failwith "invalid arguments"
+
 and trans x = Some $ FuncValue (Builtin x)
