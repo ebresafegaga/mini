@@ -146,6 +146,7 @@ and (|GetBuiltin|_|) = function
     | "map" -> trans builtinMap
     | "car" -> trans builtinCar
     | "cdr" -> trans builtinCdr
+    | "null" -> trans builtinNull
     | _ -> None
 
 and builtinMap env values =
@@ -171,6 +172,12 @@ and builtinCdr env values =
         List.tail l 
         |> List.map (eval env >> fst)
         |> ListValue
+    | _ -> failwith "invalid number of arguments"
+ 
+and builtinNull env values = 
+    match values with 
+    | [List []] -> Const (ConstBool true)
+    | [List _] -> Const (ConstBool false)
     | _ -> failwith "invalid number of arguments"
 
 and trans x = Some $ FuncValue (Builtin x)
