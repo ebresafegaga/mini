@@ -147,6 +147,7 @@ and (|GetBuiltin|_|) = function
     | "car" -> trans builtinCar
     | "cdr" -> trans builtinCdr
     | "null" -> trans builtinNull
+    | "cons" -> trans builtinCons
     | _ -> None
 
 and builtinMap env values =
