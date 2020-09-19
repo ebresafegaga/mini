@@ -177,9 +177,12 @@ and builtinCdr env values =
  
 and builtinNull env values = 
     match values with 
-    | [List []] -> ConstValue (ConstBool true)
-    | [List _] -> ConstValue (ConstBool false)
-    | _ -> failwith "invalid number of arguments"
+    | [x] -> 
+        match fst $ eval env x with 
+        | ListValue [] -> ConstValue (ConstBool true)
+        | ListValue _ -> ConstValue (ConstBool false)
+        | _ -> failwith "invalid arguments"
+    | _ -> failwith "invalid arguments"
 
 and builtinCons env values = 
     match values with 
