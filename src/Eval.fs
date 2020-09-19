@@ -176,8 +176,8 @@ and builtinCdr env values =
  
 and builtinNull env values = 
     match values with 
-    | [List []] -> Const (ConstBool true)
-    | [List _] -> Const (ConstBool false)
+    | [List []] -> ConstValue (ConstBool true)
+    | [List _] -> ConstValue (ConstBool false)
     | _ -> failwith "invalid number of arguments"
 
 and trans x = Some $ FuncValue (Builtin x)
