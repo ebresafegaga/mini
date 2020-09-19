@@ -9,7 +9,7 @@ type Name = string
 type Const = 
     | ConstString of string
     | ConstNumber of float
-    | CanstBool of bool
+    | ConstBool of bool
 
 type Expression =
     | If of Expression * Expression * Expression
