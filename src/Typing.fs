@@ -14,7 +14,6 @@ type Type =
     | TyCon of Name * Type list // A type constructor e.g  TyCon ("List", TyNumber) 
     | TyFunc of Type * Type
 
-
 // 
 // Get the free variables in a type 
 //
@@ -61,6 +60,11 @@ let freevar =
 // The unifier 
 //
 
+let chng value ty = 
+    match ty, value with 
+    | TyVar t, value -> t := value 
+    | _ -> ()
+
 let occurs t1 t2 = 
     match t1, t2 with 
     | TyVar {contents=Left idx}, t -> ftv t |> Set.contains idx
@@ -68,9 +72,24 @@ let occurs t1 t2 =
 
 let bind t1 t2 = 
     match t1, t2 with 
-    | TyVar {contents=Left idx}, t when t1 = t2 -> 
-        t1
-
+    | TyVar {contents=Left idx}, TyVar {contents=Left i} ->
+        chng (Left idx) t2
+        Ok ()
+    | TyVar {contents=Left idx}, TyVar { contents=Right ty} -> 
+        // occurs check on ty
+        if occurs t1 t2 
+        then 
+            Error 
+                [ sprintf "Occurs check failed: Cannot construct the infinite type %s ~ %s" 
+                          (prettyPrint t1) 
+                          (prettyPrint t2) ]
+        else 
+            chng (Right ty) t1
+            Ok ()
+    | TyVar {contents=Left _}, ty -> 
+        chng (Right ty) t1
+        Ok ()
+    | _ -> Error ["Cannot bind to an already bound type variable or a concrete type"]
 
 let rec unify t1 t2 = 
     match t1, t2 with 
@@ -101,8 +120,7 @@ let rec unify t1 t2 =
             let a = [ sprintf "Type Contructor names do not match %s %s" n1 n2 ]
             let b =  ["The type arguments of type contructors do not match"]
             Error (List.concat [a;b])
-    // | TyVar (Left i1), TyVar (Left i2) -> 
-    //     // Var bind 
-    //     failwith ""
-
+    | TyVar {contents=Left _}, ty -> if t1=t2 then Ok () else bind t1 ty
+    | TyVar {contents=Right ty}, _ -> unify ty t2
+    | _ -> Error [ sprintf "Cannot unify %s with %s" (prettyPrint t1) (prettyPrint t2) ]
     
