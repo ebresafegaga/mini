@@ -33,7 +33,7 @@ let addVar (var, expr) (Env ctx) =
         else ctx s
     Env f
 
-let addCtx (Env f) (Env g) = 
+let addCtx (Env f) (Env g) =
     let k s =
         match f s with
         | None -> g s
@@ -143,22 +143,11 @@ and apply ctx f args =
         | _ -> failwith "This value is not a function and cannot be applied"
 
 and (|GetBuiltin|_|) = function 
-    | "map" -> trans builtinMap
     | "car" -> trans builtinCar
     | "cdr" -> trans builtinCdr
     | "null" -> trans builtinNull
     | "cons" -> trans builtinCons
     | _ -> None
-
-and builtinMap env values =
-    // This function is buggy
-    match values with
-    | [f; List list] ->
-        let v =
-            list
-            |> List.map (List.singleton >> apply env f >> fst)
-        ListValue v
-    | _ -> failwith "invalid number of arguments"
 
 and builtinCar env values =
     match values with 
@@ -169,10 +158,10 @@ and builtinCar env values =
         | _ -> failwith "Invalid arguments"
     | _ -> failwith "invalid number of arguments"
 
-and builtinCdr env values = 
+and builtinCdr env values =
     match values with 
     | [l] -> 
-        match fst $ eval env l with 
+        match fst $ eval env l with
         | ListValue (x :: xs) -> ListValue xs
         | ListValue _ -> failwith "Attempted to get the cdr of an empty list"
         | _ -> failwith "Invalid arguments"
