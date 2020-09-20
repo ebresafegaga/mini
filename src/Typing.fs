@@ -14,6 +14,10 @@ type Type =
     | TyCon of Name * Type list // A type constructor e.g  TyCon ("List", TyNumber) 
     | TyFunc of Type * Type
 
+/// TypeEnv is a finite mapping from terms to their respective types 
+type TypeEnv = Map<string, Type>
+let emptyTypeEnv : TypeEnv = Map.empty
+
 // 
 // Get the free variables in a type 
 //
@@ -45,8 +49,7 @@ let rec prettyPrint = function
     | TyFunc (a, r) -> 
         "(" + prettyPrint a + " -> " + prettyPrint r + ")"
     | TyVar {contents=Left idx} -> sprintf "a%d" idx
-    | TyVar {contents=Right ty} -> prettyPrint ty
-    
+    | TyVar {contents=Right ty} -> prettyPrint ty    
 
 
 //  To create a new free variable 
@@ -123,4 +126,34 @@ let rec unify t1 t2 =
     | TyVar {contents=Left _}, ty -> if t1=t2 then Ok () else bind t1 ty
     | TyVar {contents=Right ty}, _ -> unify ty t2
     | _ -> Error [ sprintf "Cannot unify %s with %s" (prettyPrint t1) (prettyPrint t2) ]
-    
+
+let tyConst = function
+    | ConstBool _ -> Ok TyBool
+    | ConstNumber _ -> Ok TyNumber
+    | ConstString _ -> Ok TyString
+
+let rec infer (tenv : TypeEnv) = function 
+    | Unit -> Ok TyUnit, tenv
+    | Const c -> tyConst c, tenv
+    | Variable name -> 
+        match Map.tryFind name tenv with
+        | Some ty -> Ok ty, tenv
+        | None -> Error [sprintf "Unbound variable %s" name], tenv
+    | List list -> 
+        let result = fst (infer tenv $ List.head list)
+        match result with
+        | Ok ty -> 
+            let res = 
+                List.tail list 
+                |> List.map (infer tenv >> fst)
+                |> Result.sequenceA'
+            match res with 
+            | Ok types ->
+                let a =
+                    List.map (unify ty) types
+                    |> Result.sequenceA
+                match a with 
+                | Ok () -> Ok (TyCon ("List", [ty])), tenv
+                | Error s -> Error s, tenv
+            | Error s -> Error s, tenv
+        | Error s -> Error s, tenv

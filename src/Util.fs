@@ -56,3 +56,11 @@ module Result =
             | Error s1, Error s2 -> Error (List.concat [s1;s2])
             | Error s, _ | _, Error s -> Error s
         List.foldBack folder list (Ok ())
+    
+    let sequenceA' list =
+        let folder a s =
+            match a, s with
+            | Ok x, Ok xs -> Ok (x :: xs)
+            | Error s1, Error s2 -> Error (List.concat [s1;s2])
+            | Error s, _ | _, Error s -> Error s
+        List.foldBack folder list (Ok [])
