@@ -2,87 +2,107 @@ module Typing
 
 open Ast
 
+type Index = int 
+
 /// Types 
 type Type =
     | TyUnit
-    | TyVar of string
+    | TyVar of Either<Index, Type> ref
     | TyNumber 
     | TyString 
     | TyBool
-    | TyList of Type 
+    | TyCon of Name * Type list // A type constructor e.g  TyCon ("List", TyNumber) 
     | TyFunc of Type * Type
 
-/// A Finite map from type variables to types.
-type Subst = Subst of Map<string, Type>
-let unSubst (Subst x) = x
 
-/// A product of type variables used in a type and the actual type.
-type TypeScheme = Scheme of string list * Type
-let unScheme (Scheme (x, y)) = x, y
+// 
+// Get the free variables in a type 
+//
+let rec ftv = function 
+    | TyVar {contents = Left idx} -> Set.singleton idx
+    | TyCon (_, types) -> 
+        types 
+        |> List.map ftv
+        |> Set.unionMany
+    | TyFunc (a, r) -> Set.union (ftv a) (ftv r)
+    | _ -> Set.empty
 
-/// Γ : A finite map from terms to their type schemes 
-type TypeEnv = TypeEnv of Map<string, TypeScheme>
-let unTypeEnv (TypeEnv x) = x
-
-
-type Type with 
-    member x.FreeTypeVariables = 
-        match x with
-        | TyVar a -> Set.singleton a
-        | TyBool | TyNumber 
-        | TyUnit | TyString -> Set.empty
-        | TyFunc (a, b) -> Set.union a.FreeTypeVariables b.FreeTypeVariables
-        | TyList t -> t.FreeTypeVariables
-
-    member x.Apply (Subst s) =
-        match x with 
-        | TyVar a -> 
-            match Map.tryFind a s with 
-            | Some t -> t
-            | None -> TyVar a
-        | TyFunc (t1, t2) -> 
-            let s = Subst s 
-            TyFunc (t1.Apply s, t2.Apply s)
-        | t -> t
-
-type TypeScheme with
-    member x.FreeTypeVariables = 
-        match x with
-        | Scheme (vars, t) -> 
-            Set.difference t.FreeTypeVariables (set vars)
+//
+// pretty print a type 
+//
+let rec prettyPrint = function 
+    | TyUnit -> "()"
+    | TyString -> "string"
+    | TyNumber -> "number"
+    | TyBool -> "bool"
+    | TyCon (name, args) -> 
+        // printing a type like this List<bool> 
+        let folder a s = 
+            if s = ">"
+            then  prettyPrint a + s 
+            else prettyPrint a + "," + s
+        let t = List.foldBack folder args ">"
+        name + "<" + t 
+    | TyFunc (a, r) -> 
+        "(" + prettyPrint a + " -> " + prettyPrint r + ")"
+    | TyVar {contents=Left idx} -> sprintf "a%d" idx
+    | TyVar {contents=Right ty} -> prettyPrint ty
     
-    member x.Apply (Subst s) = 
-        match x with 
-        | Scheme (vars, t) ->
-            let s' = Subst (List.foldBack Map.remove vars s)
-            Scheme (vars, t.Apply s')
 
-let nullSubt = Subst Map.empty
-let composeSubst s1 (Subst s2) =
-    s2
-    |> Map.map (fun _ t -> t.Apply s1)
-    |> Map.union (unSubst s1)
-    |> Subst
 
-let remove (TypeEnv env) var = TypeEnv (Map.remove var env)
+//  To create a new free variable 
+let freevar =
+    let v = ref 0
+    fun () -> 
+        v := !v + 1
+        TyVar $ ref (Left !v)
 
-type TypeEnv with 
-    member x.FreeTypeVariables =
-        let result = 
-            unTypeEnv x
-            |> Map.toList
-            |> List.map (fun x -> (snd x).FreeTypeVariables)
-        List.foldBack Set.union result Set.empty
+// 
+// The unifier 
+//
+
+let occurs t1 t2 = 
+    match t1, t2 with 
+    | TyVar {contents=Left idx}, t -> ftv t |> Set.contains idx
+    | _ -> false
+
+let bind t1 t2 = 
+    match t1, t2 with 
+    | TyVar {contents=Left idx}, t when t1 = t2 -> 
+        t1
+
+
+let rec unify t1 t2 = 
+    match t1, t2 with 
+    | TyUnit, TyUnit
+    | TyNumber, TyNumber 
+    | TyString, TyString
+    | TyBool, TyBool -> Ok () 
+    | TyFunc (a1, r1), TyFunc (a2, r2) -> 
+        let a = unify a1 a2
+        let b = unify r1 r2 
+        match a, b with 
+        | Ok _, Ok _ -> Ok ()
+        | Error s1, Error s2 -> Error (List.concat [s1;s2]) 
+        | Error s, _ -> Error s 
+        | _, Error s -> Error s 
+    | TyCon (n1, a1), TyCon (n2, a2) -> 
+        // Note: This can throw an exn if a1 and a2 aren't equal in length
+        let r = 
+            List.zip a1 a2
+            |> List.map (fun (x, y) -> unify x y) 
+            |> Result.sequenceA
+        match n1=n2, r with 
+        | true, Ok () -> Ok ()
+        | false, Ok () -> Error [ sprintf "Type Contructor names do not match %s %s" n1 n2 ]
+        | true, Error s -> 
+            Error ["The type arguments of type contructors do not match"]
+        | false, Error s -> 
+            let a = [ sprintf "Type Contructor names do not match %s %s" n1 n2 ]
+            let b =  ["The type arguments of type contructors do not match"]
+            Error (List.concat [a;b])
+    // | TyVar (Left i1), TyVar (Left i2) -> 
+    //     // Var bind 
+    //     failwith ""
+
     
-    member x.Apply s =
-        (unTypeEnv x)
-        |> Map.map (fun k v -> v.Apply s)
-        |> TypeEnv
-
-// Free variables in the Type t that are not free in the TypeEnv env 
-let generalize (env: TypeEnv) (t: Type) = 
-    let vars =
-        t.FreeTypeVariables
-        |> Set.difference env.FreeTypeVariables
-        |> Set.toList
-    Scheme (vars, t)

@@ -1,8 +1,7 @@
 module Eval
 
 open Ast
-
-
+ 
 type Env = Env of (Name -> Value option) // Yes, the enviroment is a function
 
 and Value =
@@ -40,7 +39,7 @@ let addCtx (Env f) (Env g) =
         | Some _ as v -> v
     Env k
 
-let rec remove x = function
+let remove x = function
     | Env f -> 
         match f x with 
         | None -> Env f 
