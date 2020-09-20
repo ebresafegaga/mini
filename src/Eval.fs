@@ -40,6 +40,12 @@ let addCtx (Env f) (Env g) =
         | Some _ as v -> v
     Env k
 
+let rec remove x = function
+    | Env f -> 
+        match f x with 
+        | None -> Env f 
+        | Some _ -> Env $ fun x' -> if x' = x then None else f x'
+
 /// Is this value a function? 
 let churchable = function
     | FuncValue _ -> true
@@ -179,9 +185,9 @@ and builtinNull env values =
 and builtinCons env values = 
     match values with
     | [x; xs] ->
-        let x, xs = (eval env >> fst) $ x, (eval env >> fst) xs
-        match xs with 
-        | ListValue xs -> ListValue $ x :: xs
+        let x', xs' = fst (eval env x), fst (eval env xs)
+        match xs' with 
+        | ListValue xs'' -> ListValue $ x' :: xs''
         | _ -> failwithf "Expected a list but got a %A" xs
     | _ -> failwith "invalid number arguments"
 
