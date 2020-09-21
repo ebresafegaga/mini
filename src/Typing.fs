@@ -118,11 +118,10 @@ let rec unify t1 t2 =
         | Error s1, Error s2 -> Error (List.concat [s1;s2]) 
         | Error s, _ -> Error s 
         | _, Error s -> Error s 
-    | TyCon (n1, a1), TyCon (n2, a2) -> 
-        // Note: This can throw an exn if a1 and a2 aren't equal in length
+    | TyCon (n1, a1), TyCon (n2, a2) ->
         let r = 
-            List.zip a1 a2
-            |> List.map (fun (x, y) -> unify x y) 
+            a1
+            |> List.zipWith unify a2
             |> Result.sequenceA
         match n1=n2, r with 
         | true, Ok () -> Ok ()

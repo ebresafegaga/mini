@@ -13,7 +13,7 @@ let uncurry f a b = f (a, b)
 
 module String =
     let toList (s: string) = 
-        s.ToCharArray () 
+        s.ToCharArray ()
             |> List.ofArray
 
     let foldBack f s b =
@@ -76,3 +76,10 @@ module Result =
             | Error s1, Error s2 -> Error (List.concat [s1;s2])
             | Error s, _ | _, Error s -> Error s
         List.foldBack folder list (Ok [])
+
+
+module List = 
+    let rec zipWith f xs ys = 
+        match xs, ys with
+        | x :: xs, y :: ys ->  f x y :: zipWith f xs ys 
+        | _ -> []
