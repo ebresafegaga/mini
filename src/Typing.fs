@@ -132,6 +132,9 @@ let tyConst = function
     | ConstNumber _ -> Ok TyNumber
     | ConstString _ -> Ok TyString
 
+let funcFromTypes types = 
+    List.reduceBack (uncurry TyFunc) types 
+
 let rec infer (tenv : TypeEnv) = function 
     | Unit -> Ok TyUnit, tenv
     | Const c -> tyConst c, tenv
@@ -140,11 +143,17 @@ let rec infer (tenv : TypeEnv) = function
         | Some ty -> Ok ty, tenv
         | None -> Error [sprintf "Unbound variable %s" name], tenv
     | List list -> 
-        let result = fst (infer tenv $ List.head list)
+        // TODO: just  short circuit when you know the list is empty
+        // TODO: use computation expression 
+        let v = List.tryHead list
+        let result = 
+            match v with 
+            | Some v -> fst (infer tenv v)
+            | None -> Ok $ freevar()
         match result with
         | Ok ty -> 
             let res = 
-                List.tail list 
+                list // List.tail list -- I don't use this for now cuz list can be [] and this will throw an exn
                 |> List.map (infer tenv >> fst)
                 |> Result.sequenceA'
             match res with 
@@ -156,4 +165,49 @@ let rec infer (tenv : TypeEnv) = function
                 | Ok () -> Ok (TyCon ("List", [ty])), tenv
                 | Error s -> Error s, tenv
             | Error s -> Error s, tenv
+        | Error s -> Error s, tenv
+    | Lambda (name, body) -> 
+        let ty = freevar ()
+        let tenv' = Map.add name ty tenv
+        let result = fst $ infer tenv' body
+        match result with 
+        | Ok value -> Ok (TyFunc (ty, value)), tenv
+        | Error s -> Error s, tenv
+    | If (pred, e1, e2) ->
+        let work = result {
+            let! typred = fst (infer tenv pred) 
+            let! tye1 = fst (infer tenv e1) 
+            let! tye2 = fst (infer tenv e2)
+
+            do! unify typred TyBool
+            do! unify tye1 tye2
+
+            return tye1
+        }
+        work, tenv
+    | Application (func, args) -> 
+        let work = result {
+            let retTy = freevar ()
+            let! fty = fst (infer tenv func)
+            let! tys =
+                List.map (infer tenv >> fst) args
+                |> Result.sequenceA'
+            let fntyp = TyFunc (funcFromTypes tys, retTy)
+
+            do! unify fty fntyp
+
+            return retTy
+        }
+        work, tenv
+    | Binary (l, op, r) ->
+        failwith "TODO"
+    | Binding (name, expr) -> 
+        let work = result {
+            let! ty = fst (infer tenv expr)
+            return ty
+        }
+        match work with 
+        | Ok typ -> 
+            let tenv' = Map.add name typ tenv
+            work, tenv'
         | Error s -> Error s, tenv

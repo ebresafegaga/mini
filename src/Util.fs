@@ -47,6 +47,15 @@ module Map =
 
         Map.foldBack folder m1 m2
 
+type ResultBuilder () = 
+    member x.Return a = Ok a
+    member x.Bind (r, f) = 
+        match r with 
+        | Ok a -> f a
+        | Error s -> Error s
+    member x.ReturnFrom a = a
+
+let result = ResultBuilder ()
 
 module Result =
     let sequenceA list =
