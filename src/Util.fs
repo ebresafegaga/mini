@@ -65,7 +65,10 @@ module Result =
             | Error s1, Error s2 -> Error (List.concat [s1;s2])
             | Error s, _ | _, Error s -> Error s
         List.foldBack folder list (Ok ())
-    
+
+    // This is the sequenceA you *really* want
+    // I'm sorry for the poor naming 
+    // TODO: rename and refactor references
     let sequenceA' list =
         let folder a s =
             match a, s with
