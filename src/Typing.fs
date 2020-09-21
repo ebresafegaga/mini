@@ -63,6 +63,7 @@ let freevar =
 // The unifier 
 //
 
+// Chamge the value stored in a type variable 
 let chng value ty = 
     match ty, value with 
     | TyVar t, value -> t := value 
@@ -73,7 +74,7 @@ let occurs t1 t2 =
     | TyVar {contents=Left idx}, t -> ftv t |> Set.contains idx
     | _ -> false
 
-let bind t1 t2 = 
+let bind t1 t2 =
     match t1, t2 with 
     | TyVar {contents=Left idx}, TyVar {contents=Left i} ->
         chng (Left idx) t2
@@ -90,11 +91,20 @@ let bind t1 t2 =
             chng (Right ty) t1
             Ok ()
     | TyVar {contents=Left _}, ty -> 
-        chng (Right ty) t1
-        Ok ()
+        // TODO: check what actually happnes if we contruct infinite types and pretty print out types to the console
+        // occurs check on ty 
+        if occurs t1 t2 
+        then
+            Error 
+                [ sprintf "Occurs check failed: Cannot construct the infinite type %s ~ %s" 
+                          (prettyPrint t1) 
+                          (prettyPrint t2) ] 
+        else 
+            chng (Right ty) t1
+            Ok ()
     | _ -> Error ["Cannot bind to an already bound type variable or a concrete type"]
 
-let rec unify t1 t2 = 
+let rec unify t1 t2 =
     match t1, t2 with 
     | TyUnit, TyUnit
     | TyNumber, TyNumber 
@@ -125,6 +135,7 @@ let rec unify t1 t2 =
             Error (List.concat [a;b])
     | TyVar {contents=Left _}, ty -> if t1=t2 then Ok () else bind t1 ty
     | TyVar {contents=Right ty}, _ -> unify ty t2
+    | _, TyVar _ -> unify t2 t1
     | _ -> Error [ sprintf "Cannot unify %s with %s" (prettyPrint t1) (prettyPrint t2) ]
 
 let tyConst = function
@@ -185,7 +196,7 @@ let rec infer (tenv : TypeEnv) = function
             return tye1
         }
         work, tenv
-    | Application (func, args) -> 
+    | Application (func, args) ->
         let work = result {
             let retTy = freevar ()
             let! fty = fst (infer tenv func)
