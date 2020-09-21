@@ -79,7 +79,7 @@ let bind t1 t2 =
     | TyVar {contents=Left idx}, TyVar {contents=Left i} ->
         chng (Left idx) t2
         Ok ()
-    | TyVar {contents=Left idx}, TyVar { contents=Right ty} -> 
+    | TyVar {contents=Left idx}, TyVar {contents=Right ty} -> 
         // occurs check on ty
         if occurs t1 t2 
         then 
@@ -90,10 +90,10 @@ let bind t1 t2 =
         else 
             chng (Right ty) t1
             Ok ()
-    | TyVar {contents=Left _}, ty -> 
+    | TyVar {contents=Left _}, ty ->
         // TODO: check what actually happnes if we contruct infinite types and pretty print out types to the console
-        // occurs check on ty 
-        if occurs t1 t2 
+        // occurs check on ty
+        if occurs t1 t2
         then
             Error 
                 [ sprintf "Occurs check failed: Cannot construct the infinite type %s ~ %s" 
@@ -125,13 +125,14 @@ let rec unify t1 t2 =
             |> Result.sequenceA
         match n1=n2, r with 
         | true, Ok () -> Ok ()
-        | false, Ok () -> Error [ sprintf "Type Contructor names do not match %s %s" n1 n2 ]
+        | false, Ok () -> Error [ sprintf "Type contructor %s does not match with  %s" n1 n2 ]
         | true, Error s -> 
-            Error ["The type arguments of type contructors do not match"]
+            s ++ "The type arguments of type contructors do not match"
+            |> Error
         | false, Error s -> 
             let a = [ sprintf "Type Contructor names do not match %s %s" n1 n2 ]
             let b =  ["The type arguments of type contructors do not match"]
-            Error (List.concat [a;b])
+            Error (s @ List.concat [a;b])
     | TyVar {contents=Left _}, ty -> if t1=t2 then Ok () else bind t1 ty
     | TyVar {contents=Right ty}, _ -> unify ty t2
     | _, TyVar _ -> unify t2 t1
@@ -142,8 +143,9 @@ let tyConst = function
     | ConstNumber _ -> Ok TyNumber
     | ConstString _ -> Ok TyString
 
-let funcFromTypes types = 
-    List.reduceBack (uncurry TyFunc) types 
+// Transform a list of types to a single function type 
+let reduceTypes types = 
+    List.reduceBack (uncurry TyFunc) types
 
 let rec infer (tenv : TypeEnv) = function 
     | Unit -> Ok TyUnit, tenv
@@ -185,7 +187,7 @@ let rec infer (tenv : TypeEnv) = function
         | Error s -> Error s, tenv
     | If (pred, e1, e2) ->
         let work = result {
-            let! typred = fst (infer tenv pred) 
+            let! typred = fst (infer tenv pred)
             let! tye1 = fst (infer tenv e1) 
             let! tye2 = fst (infer tenv e2)
 
@@ -202,7 +204,7 @@ let rec infer (tenv : TypeEnv) = function
             let! tys =
                 List.map (infer tenv >> fst) args
                 |> Result.sequenceA'
-            let fntyp = TyFunc (funcFromTypes tys, retTy)
+            let fntyp = TyFunc (reduceTypes tys, retTy)
 
             do! unify fty fntyp
 
