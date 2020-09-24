@@ -198,6 +198,7 @@ let rec infer (tenv : TypeEnv) = function
         }
         work, tenv
     | Application (func, args) ->
+        // Not applying lambda calculus style 
         let work = result {
             let retTy = freevar ()
             let! fty = fst (infer tenv func)
@@ -223,3 +224,6 @@ let rec infer (tenv : TypeEnv) = function
             let tenv' = Map.add name typ tenv
             work, tenv'
         | Error s -> Error s, tenv
+
+// TODO: fix this bug in the type checker 
+// let f() = (fun esv es e -> esv e (es e)) (fun a e -> a)//  (fun a e -> a)

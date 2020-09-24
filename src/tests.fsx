@@ -1,6 +1,31 @@
 #load "Syntax.fs"
 
 
+let rec merge xs ys = 
+    match xs, ys with 
+    | x :: xs, y :: _ when x < y -> x :: merge xs ys
+    | _ :: _, y :: ys -> y :: merge xs ys
+    | xs, [] -> xs
+    | [], ys -> ys
+
+let rec merge' xs = List.foldBack merge xs [] 
+
+let a = merge' [ [4;6;8]; [34; 56; 68]; [1;3;7]; [9;29;67]; ]
+
+let e = merge [1;3;5] [2;6;8]
+
+let splitEven xs = 
+    let rec s xs ys = 
+        match xs, ys with
+        | _ :: _ :: xs, y :: ys ->
+            let left, right = s xs ys
+            y :: left, right
+        | _, xs -> ([], xs)
+    s xs xs
+ 
+let edd = splitEven [1;2;3;3;4;5]
+
+
 let rec foldr f i l = 
     match l with 
     | [] -> i 

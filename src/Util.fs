@@ -1,6 +1,11 @@
 [<AutoOpen>]
 module Util
 
+let rec (|Snoc|_|) = function
+    | [x] -> Some ([], x)
+    | x :: Snoc (xs, last) -> Some (x::xs, last)
+    | _ -> None
+
 type Either<'a, 'b> = Left of 'a | Right of 'b
 
 let (++) list a = list @ [ a ]
