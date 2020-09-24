@@ -6,9 +6,20 @@ let rec (|Snoc|_|) = function
     | x :: Snoc (xs, last) -> Some (x::xs, last)
     | _ -> None
 
+let rec (|Half|) xs =
+    let rec s xs ys =
+        match xs, ys with
+        | _ :: _ :: xs, y :: ys ->
+            let left, right = s xs ys
+            y :: left, right
+        | _, xs -> ([], xs)
+    let left, right = s xs xs
+    Half (left, right)
+
+
 type Either<'a, 'b> = Left of 'a | Right of 'b
 
-let (++) list a = list @ [ a ]
+let (++) list a = list @ [a]
 
 let ($) = (<|)
 
