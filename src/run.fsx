@@ -4,6 +4,9 @@
 #load "Eval.fs"
 #load "Typing.fs"
 
+let s = "let S = fn esv es e => esv e (es e)"
+let k = "let K = fn a e => a" 
+
 // Typing 
 let tenv = ref Typing.emptyTypeEnv
 let infer' expr =
