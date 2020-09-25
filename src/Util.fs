@@ -61,7 +61,7 @@ module Map =
 
         Map.foldBack folder m1 m2
 
-type ResultBuilder () = 
+type ResultBuilder () =
     member x.Return a = Ok a
     member x.Bind (r, f) =
         match r with 
@@ -72,6 +72,10 @@ type ResultBuilder () =
 let result = ResultBuilder ()
 
 module Result =
+    // 
+    //  Note that this two instances of seqA can be generalized by a (<*>)
+    //  given that what the error contains is a Monoid
+
     let sequenceA list =
         let folder a s =
             match a, s with

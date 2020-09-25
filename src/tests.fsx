@@ -1,13 +1,39 @@
 #load "Syntax.fs"
 
+let rec (<*>) fs xs = 
+    match fs, xs with 
+    | f :: fs, x :: xs -> f x :: (fs <*> xs)
+    | _ -> []
+
+let pure' f = [f]
+
+let cons x xs = x :: xs 
+
+let rec seqA xs =
+    match xs with
+    | [] -> [[]]
+    | xs :: xss -> pure' cons <*> xs <*> seqA xss
+
+let m = 
+    [
+        [1;2;3]
+        [3;4;5]
+        [6;7;8]
+    ]
+
 // Peano numbers 
 let (|S|Z|) = function 
     | 0 -> Z
     | n -> S (n-1)
 
+let rec repeat f = function 
+    | Z   -> []
+    | S k -> f :: repeat f k
+
+
 let rec fib = function 
-    | Z -> 0
-    | S 0 -> 0
+    | Z       -> 0
+    | S 0     -> 0
     | S (S k) -> fib k + fib (k+1)
 
 

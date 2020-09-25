@@ -4,11 +4,20 @@
 #load "Eval.fs"
 #load "Typing.fs"
 
-let infer = Typing.infer Typing.emptyTypeEnv >> fst >> Result.map Typing.prettyPrint
+// Typing 
+let tenv = ref Typing.emptyTypeEnv
+let infer' expr =
+    let result, tenv' = Typing.infer !tenv expr 
+    tenv := tenv'
+    result 
+    |> Result.map Typing.prettyPrint
+
+// Evaluations 
 let env = ref Eval.empty 
-let tok = Syntax.tokenize >> Syntax.filter 
-let ps = tok >> Syntax.parse
 let eval expr = 
     let v, e = Eval.eval !env expr
     env := e
     v
+
+let tok = Syntax.tokenize >> Syntax.filter 
+let ps = tok >> Syntax.parse
