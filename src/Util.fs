@@ -13,9 +13,7 @@ let rec (|Half|) xs =
             let left, right = s xs ys
             y :: left, right
         | _, xs -> ([], xs)
-    let left, right = s xs xs
-    Half (left, right)
-
+    Half (s xs xs)
 
 type Either<'a, 'b> = Left of 'a | Right of 'b
 
@@ -65,7 +63,7 @@ module Map =
 
 type ResultBuilder () = 
     member x.Return a = Ok a
-    member x.Bind (r, f) = 
+    member x.Bind (r, f) =
         match r with 
         | Ok a -> f a
         | Error s -> Error s
@@ -92,7 +90,6 @@ module Result =
             | Error s1, Error s2 -> Error (List.concat [s1;s2])
             | Error s, _ | _, Error s -> Error s
         List.foldBack folder list (Ok [])
-
 
 module List = 
     let rec zipWith f xs ys = 

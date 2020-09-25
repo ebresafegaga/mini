@@ -1,5 +1,59 @@
 #load "Syntax.fs"
 
+// Peano numbers 
+let (|S|Z|) = function 
+    | 0 -> Z
+    | n -> S (n-1)
+
+let rec fib = function 
+    | Z -> 0
+    | S 0 -> 0
+    | S (S k) -> fib k + fib (k+1)
+
+
+let (|Zero|Even|Odd|) = function 
+    | 0 -> Zero
+    | n when n%2 = 0 -> Even (n/2)
+    | n -> Odd ((n-1)/2) 
+
+let rec power x = function 
+    | Zero -> 1
+    | Even n -> power (x*x) n
+    | Odd n -> x * power (x*x) n
+
+let (|As|) x = As (x, x)
+
+let a = function 
+    | As (Some {contents = 10}, v) -> "some"
+    | _ -> ""
+ 
+let rec factorial = function 
+    // | Zero as n -> 1
+    // | S k as n -> n * factorial k  
+    | As (Zero, n) -> 1
+    | As (S k, n) -> n * factorial k
+
+let rec (|Zip|) = function 
+    | [] -> Zip ([], [])
+    | (a, b) :: Zip (l, r) -> Zip (a::l, b::r)
+
+
+type JoinList<'a> = 
+    | JNil 
+    | Unit of 'a 
+    | Join of JoinList<'a> * JoinList<'a> 
+
+let rec (|Cons|_|) = function 
+    | Unit x -> Some (x, JNil)
+    | JNil -> None
+    | Join (Cons (a, b), JNil) -> Some (a, b)
+    | Join (JNil, Cons (a, b)) -> Some (a, b)
+    | Join (Unit x, xs) -> Some (x, xs)
+    | Join (Join (xs, ys), zs) -> 
+        match Join (xs, Join (ys, zs)) with 
+        | Cons (a, b) -> Some (a, b)
+        | _ -> None
+
 
 let rec merge xs ys = 
     match xs, ys with 
