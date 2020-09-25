@@ -9,7 +9,7 @@ let k = "let K = fn a e => a"
 
 // Typing 
 let tenv = ref Typing.emptyTypeEnv
-let infer' expr =
+let infer expr =
     let result, tenv' = Typing.infer !tenv expr 
     tenv := tenv'
     result 

@@ -78,6 +78,7 @@ let bind t1 t2 =
     match t1, t2 with 
     | TyVar {contents=Left idx}, TyVar {contents=Left i} ->
         chng (Left idx) t2
+        // chng (Left i) t1
         Ok ()
     | TyVar {contents=Left idx}, TyVar {contents=Right ty} -> 
         // occurs check on ty
@@ -147,6 +148,9 @@ let tyConst = function
 let reduceTypes types = 
     List.reduceBack (uncurry TyFunc) types
 
+let foldTypes types edge = 
+    List.foldBack (uncurry TyFunc) types edge
+
 let rec infer (tenv : TypeEnv) = function 
     | Unit -> Ok TyUnit, tenv
     | Const c -> tyConst c, tenv
@@ -205,7 +209,7 @@ let rec infer (tenv : TypeEnv) = function
             let! tys =
                 List.map (infer tenv >> fst) args
                 |> Result.sequenceA'
-            let fntyp = TyFunc (reduceTypes tys, retTy)
+            let fntyp = foldTypes tys retTy
 
             do! unify fty fntyp
 
@@ -226,4 +230,4 @@ let rec infer (tenv : TypeEnv) = function
         | Error s -> Error s, tenv
 
 // TODO: fix this bug in the type checker 
-// let f() = (fun esv es e -> esv e (es e)) (fun a e -> a)//  (fun a e -> a)
+let f() = (fun esv es e -> esv e (es e)) (fun a e -> a)//  (fun a e -> a)
