@@ -347,13 +347,23 @@ let oneOrMore pattern =
         match pattern p tokens with
         | None -> p, List.rev result 
         | Some (np, expr) -> 
-            printfn "Got %A at %A" expr np
             go np tokens (expr :: result) 
 
     fun position tokens ->
         let pos, result = go position tokens []
         if List.isEmpty result then None // must match at least one 
         else Some (pos, result)
+
+let zeroOrMore pattern = 
+    let rec go p tokens result = 
+        match pattern p tokens with
+        | None -> p, List.rev result 
+        | Some (np, expr) -> 
+            go np tokens (expr :: result) 
+
+    fun position tokens ->
+        let pos, result = go position tokens [] 
+        Some (pos, result)
 
 // Fix bug - probably reimplement
 // (P sep P)+
@@ -442,8 +452,7 @@ let (|Token|_|) value position tokens =
 // TODO: use disjunctive patterns
 let rec (|Expression|_|) p tokens = 
     match tokens with 
-    | FunctionBinding p result -> Some result 
-    | BindingExpression p result -> Some result 
+    | Binding p result -> Some result 
     | LambdaExpression p result -> Some result  
     | BinaryExpression p result -> Some result
     | ListExpression p result -> Some result
@@ -517,28 +526,6 @@ and (|VariableExpression|_|) p tokens =
         | { Kind = Id id | Builtin id } -> Some (p+1, Ast.Variable id) // hmm?
         | _ -> None
 
-// binding: let v = <expr>
-and (|BindingExpression|_|) p tokens = 
-    let l = Kwd "let"
-    let r = Kwd "rec"
-    match tokens with 
-    | Token l p (p, _) -> 
-        match tokens with
-        | VariableExpression p (np, Ast.Variable var) ->
-            if np >= List.length tokens then None // guard
-            else
-                match tokens.[np] with
-                |  { Kind = Equals } ->
-                    let p = np + 1 // re bind 
-                    if p >= List.length tokens then None // guard
-                    else
-                        match tokens with
-                        | Expression p (np, expr) -> Some (np, Ast.Binding (var, expr)) 
-                        | _ -> None
-                | _ -> None 
-        | _ -> None 
-    | _ -> None 
-
 and (|BinaryExpression|_|) p tokens = 
     let len = List.length tokens
     match tokens with
@@ -601,7 +588,7 @@ and (|UnitExpression|_|) p tokens =
     // let g = fun _ -> Ast.Unit
     // thisAndThat k k' <!> g
 
-and (|FunctionBinding|_|) p tokens = 
+and (|Binding|_|) p tokens = 
     let l = Kwd "let"
     let r = Kwd "rec"
 
@@ -612,7 +599,7 @@ and (|FunctionBinding|_|) p tokens =
     let eq =  (|Token|_|) Equals <!> const' Ast.Unit <!> List.singleton
 
     let expr = (|Expression|_|) 
-    let pattern = oneOrMore (|VariableExpression|_|)
+    let pattern = zeroOrMore (|VariableExpression|_|)
 
     let letEq = thisAndThat (thisAndThat let' pattern <!> List.collect id) eq <!> List.collect id
     let letRec = 
@@ -632,9 +619,11 @@ and (|FunctionBinding|_|) p tokens =
 
     let value = 
         match tokens with 
-        | Lets p (p, Consf f (Ast.Variable "l'etat rec moi", ConsSnoc (Ast.Variable name, vars, body)) as t) -> 
+        | Lets p (p, Consf f (Ast.Variable name, Only body)) -> 
+            Some (p, Ast.Binding (name, body))
+        | Lets p (p, Consf f (Ast.Variable "l'etat rec moi", ConsSnoc (Ast.Variable name, vars, body))) -> 
             Some (p, Ast.RecBinding (name, Ast.transform (trans vars) body))
-        | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body)) as t) -> 
+        | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body))) -> 
             let vars' = v :: vars 
             Some (p, Ast.Binding (name, Ast.transform (trans vars') body))
         | _ -> 
