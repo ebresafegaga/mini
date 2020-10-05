@@ -25,6 +25,7 @@ type Expression =
     | Const of Const
     | Variable of Name
     | Binding of Name * Expression
+    | RecBinding of Name * Expression
     | Binary of Expression * Name * Expression
     | List of Expression list
     | Lambda of Name * Expression

@@ -633,7 +633,7 @@ and (|FunctionBinding|_|) p tokens =
     let value = 
         match tokens with 
         | Lets p (p, Consf f (Ast.Variable "l'etat rec moi", ConsSnoc (Ast.Variable name, vars, body)) as t) -> 
-            Some (p, Ast.Binding (name, Ast.transform (trans vars) body))
+            Some (p, Ast.RecBinding (name, Ast.transform (trans vars) body))
         | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body)) as t) -> 
             let vars' = v :: vars 
             Some (p, Ast.Binding (name, Ast.transform (trans vars') body))
