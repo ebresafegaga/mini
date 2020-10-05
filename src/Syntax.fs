@@ -602,7 +602,6 @@ and (|UnitExpression|_|) p tokens =
     // thisAndThat k k' <!> g
 
 and (|FunctionBinding|_|) p tokens = 
-    printfn "Trying fn bindings"
     let l = Kwd "let"
     let r = Kwd "rec"
 
@@ -636,11 +635,9 @@ and (|FunctionBinding|_|) p tokens =
         | Lets p (p, Consf f (Ast.Variable "l'etat rec moi", ConsSnoc (Ast.Variable name, vars, body)) as t) -> 
             Some (p, Ast.Binding (name, Ast.transform (trans vars) body))
         | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body)) as t) -> 
-            printfn "%A, %A, %A, %A" name v vars body
             let vars' = v :: vars 
             Some (p, Ast.Binding (name, Ast.transform (trans vars') body))
         | _ -> 
-            printfn "Didn't match any"
             None 
     value
 
