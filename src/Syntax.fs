@@ -517,11 +517,12 @@ and (|VariableExpression|_|) p tokens =
         | { Kind = Id id | Builtin id } -> Some (p+1, Ast.Variable id) // hmm?
         | _ -> None
 
-// binding: v = <expr>
+// binding: let v = <expr>
 and (|BindingExpression|_|) p tokens = 
     let l = Kwd "let"
+    let r = Kwd "rec"
     match tokens with 
-    | Token l p (p, tok) -> 
+    | Token l p (p, _) -> 
         match tokens with
         | VariableExpression p (np, Ast.Variable var) ->
             if np >= List.length tokens then None // guard
@@ -600,29 +601,63 @@ and (|UnitExpression|_|) p tokens =
     // let g = fun _ -> Ast.Unit
     // thisAndThat k k' <!> g
 
-// TODO: SCRAP THE BOILER PLATE OUT OF THIS PATTERN!!!!
 and (|FunctionBinding|_|) p tokens = 
-    let pattern = oneOrMore (|VariableExpression|_|)
+    
     let l = Kwd "let"
     let r = Kwd "rec"
-    match tokens with 
-    | Token l p (p, _) -> 
-        match pattern p tokens with 
-        | Some (p1, Ast.Variable name :: ps) -> 
-            match tokens with 
-            | Token Equals p1 (p2, _) -> 
-                match tokens with 
-                | Expression p2 (p3, expr) -> 
-                    let l = 
-                        ps 
-                        |> List.map (function
-                                    | Ast.Variable n -> n
-                                    | _ -> failwith "(|FunctionExpression|_|): Internal error")
-                    Some (p3, Ast.Binding (name, Ast.transform l expr))
-                | _ -> None
-            | _ ->  None
+
+    let let' =  (|Token|_|) l <!> const' Ast.Unit <!> List.singleton
+    // Hack: using Variable to specify a rec because that info is lost when I do Consf and 
+    // I try to get it back with this bad boy
+    let rec' =  (|Token|_|) r <!> const' (Ast.Variable "l'etat rec moi") <!> List.singleton
+    let eq =  (|Token|_|) Equals <!> const' Ast.Unit <!> List.singleton
+
+    let expr = (|Expression|_|) 
+    let pattern = oneOrMore (|VariableExpression|_|)
+
+    let letEq = thisAndThat (thisAndThat let' pattern <!> List.collect id) eq <!> List.collect id
+    let letRec = 
+        thisAndThat
+            (thisAndThat (thisAndThat let' pattern <!> List.collect id) rec' <!> List.collect id)
+            eq <!> List.collect id
+
+    let (|Lets|_|) = thisAndThat (thisOrThat letEq letRec) (expr <!> List.singleton) <!> List.collect id
+
+    let f = function Ast.Unit -> false | _ -> true 
+
+    let trans variables =
+        variables  
+        |> List.map (function
+                     | Ast.Variable n -> n
+                     | _ -> failwith "this shouldn't happen, but I know it will")
+
+    let value = 
+        match tokens with 
+        | Lets p (p, Consf f (``this is rec``, ConsSnoc (Ast.Variable name, vars, body))) -> 
+            Some (p, Ast.Binding (name, Ast.transform (trans vars) body))
+        | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body))) -> 
+            let vars = v :: vars 
+            Some (p, Ast.Binding (name, Ast.transform (trans vars) body))
         | _ -> None 
-    | _ -> None 
+    value 
+    // match tokens with 
+    // | Token l p (p, _) -> 
+    //     match pattern p tokens with 
+    //     | Some (p1, Ast.Variable name :: ps) -> 
+    //         match tokens with 
+    //         | Token Equals p1 (p2, _) -> 
+    //             match tokens with 
+    //             | Expression p2 (p3, expr) -> 
+    //                 let l = 
+    //                     ps 
+    //                     |> List.map (function
+    //                                 | Ast.Variable n -> n
+    //                                 | _ -> failwith "(|FunctionExpression|_|): Internal error")
+    //                 Some (p3, Ast.Binding (name, Ast.transform l expr))
+    //             | _ -> None
+    //         | _ ->  None
+    //     | _ -> None 
+    // | _ -> None 
 
 // alow unit params 
 and (|LambdaExpression|_|) p tokens =
@@ -696,7 +731,7 @@ and (|IfExpression|_|) p tokens =
     let (|Pat|_|) = thisAndThat p1 p' <!> List.collect id
 
     match tokens with 
-    | Pat p (p, [_;e1;_;e2;_;e3]) -> Some (p, Ast.If (e1, e2, e3))
+    | Pat p (p, [_if; e1; _else; e2;_then; e3]) -> Some (p, Ast.If (e1, e2, e3))
     | _ -> None
 
 let filter = List.filter (isWs >> not)

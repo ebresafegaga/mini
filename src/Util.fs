@@ -6,6 +6,23 @@ let rec (|Snoc|_|) = function
     | x :: Snoc (xs, last) -> Some (x::xs, last)
     | _ -> None
 
+let rec (|Consf|_|) f = function
+    | a :: Consf f (b, xs) when f a -> Some (a, b :: xs)
+    | a :: Consf f (b, xs) -> Some (b, xs)
+    | a :: _ when f a -> Some (a, []) 
+    | a :: _ -> None
+    | [] -> None
+
+// let (|ConsSnoc|_|) = function 
+//     | first :: Snoc (middle, last) -> Some (first, middle, last)
+//     | _ -> None
+
+let rec (|ConsSnoc|Only|Empty|) = function
+    | [] -> Empty
+    | only :: Empty -> Only only
+    | first :: Only last -> ConsSnoc (first, [], last) 
+    | first :: ConsSnoc (y, ys, last) -> ConsSnoc (first, y :: ys, last)
+
 let rec (|Half|) xs =
     let rec s xs ys =
         match xs, ys with
@@ -39,18 +56,6 @@ module String =
 // let _f = failwith ""
 
 // let data = List.foldBack (fun x -> _f) ["e", 3; "r", 4] 13
-
-
-// let f x = 
-//     let f _ = 10 
-//     f 10
-
-
-// let rec Y f = f (fun x -> (Y f) x)
- 
-// let Y' =
-//     fun le -> 
-//         (fun f -> f f) (fun f -> le (fun x -> (f f) x))
 
 module Map =
     let union m1 m2 =

@@ -230,4 +230,6 @@ let rec infer (tenv : TypeEnv) = function
         | Error s -> Error s, tenv
 
 // TODO: fix this bug in the type checker 
-let f() = (fun esv es e -> esv e (es e)) (fun a e -> a)//  (fun a e -> a)
+let f() = (fun esv es e -> esv e (es e)) (fun a e -> a) //
+
+// program for mechanical derivation on eta reduction and eta abstraction 
