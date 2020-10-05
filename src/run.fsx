@@ -1,4 +1,4 @@
-#load "Util.fs"
+#load "Prelude.fs"
 #load "Ast.fs"
 #load "Syntax.fs"
 #load "Eval.fs"

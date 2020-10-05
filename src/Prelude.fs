@@ -1,5 +1,5 @@
 [<AutoOpen>]
-module Util
+module Prelude
 
 let rec (|Snoc|_|) = function
     | [x] -> Some ([], x)
