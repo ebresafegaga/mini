@@ -622,7 +622,9 @@ and (|Binding|_|) p tokens =
         | Lets p (p, Consf f (Ast.Variable name, Only body)) -> 
             Some (p, Ast.Binding (name, body))
         | Lets p (p, Consf f (Ast.Variable "l'etat rec moi", ConsSnoc (Ast.Variable name, vars, body))) -> 
-            Some (p, Ast.RecBinding (name, Ast.transform (trans vars) body))
+            if List.isEmpty vars 
+                then Some (p, Ast.RecBinding (name, body))
+                else Some (p, Ast.RecBinding (name, Ast.transform (trans vars) body))
         | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body))) -> 
             let vars' = v :: vars 
             Some (p, Ast.Binding (name, Ast.transform (trans vars') body))
