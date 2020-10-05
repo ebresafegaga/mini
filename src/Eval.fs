@@ -80,7 +80,7 @@ let rec eval ctx expr =
         | ConstValue (ConstBool v) -> 
             if v then eval ctx if' else eval ctx else'
         | _ -> failwith "invalid if expression"
-    | Binding (a, expr) ->
+    | Binding (a, expr) | RecBinding (a, expr) ->
         let value, newCtx = eval ctx expr 
         UnitValue, addVar (a, value) newCtx
     | Lambda (a, expr) ->
