@@ -442,8 +442,8 @@ let (|Token|_|) value position tokens =
 // TODO: use disjunctive patterns
 let rec (|Expression|_|) p tokens = 
     match tokens with 
-    | BindingExpression p result -> Some result 
     | FunctionBinding p result -> Some result 
+    | BindingExpression p result -> Some result 
     | LambdaExpression p result -> Some result  
     | BinaryExpression p result -> Some result
     | ListExpression p result -> Some result
@@ -602,7 +602,7 @@ and (|UnitExpression|_|) p tokens =
     // thisAndThat k k' <!> g
 
 and (|FunctionBinding|_|) p tokens = 
-    
+    printfn "Trying fn bindings"
     let l = Kwd "let"
     let r = Kwd "rec"
 
@@ -618,7 +618,7 @@ and (|FunctionBinding|_|) p tokens =
     let letEq = thisAndThat (thisAndThat let' pattern <!> List.collect id) eq <!> List.collect id
     let letRec = 
         thisAndThat
-            (thisAndThat (thisAndThat let' pattern <!> List.collect id) rec' <!> List.collect id)
+            (thisAndThat (thisAndThat let' rec' <!> List.collect id) pattern <!> List.collect id)
             eq <!> List.collect id
 
     let (|Lets|_|) = thisAndThat (thisOrThat letEq letRec) (expr <!> List.singleton) <!> List.collect id
@@ -633,12 +633,15 @@ and (|FunctionBinding|_|) p tokens =
 
     let value = 
         match tokens with 
-        | Lets p (p, Consf f (``this is rec``, ConsSnoc (Ast.Variable name, vars, body))) -> 
+        | Lets p (p, Consf f (Ast.Variable "l'etat rec moi", ConsSnoc (Ast.Variable name, vars, body)) as t) -> 
             Some (p, Ast.Binding (name, Ast.transform (trans vars) body))
-        | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body))) -> 
-            let vars = v :: vars 
-            Some (p, Ast.Binding (name, Ast.transform (trans vars) body))
-        | _ -> None 
+        | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body)) as t) -> 
+            printfn "%A, %A, %A, %A" name v vars body
+            let vars' = v :: vars 
+            Some (p, Ast.Binding (name, Ast.transform (trans vars') body))
+        | _ -> 
+            printfn "Didn't match any"
+            None 
     value 
     // match tokens with 
     // | Token l p (p, _) -> 
