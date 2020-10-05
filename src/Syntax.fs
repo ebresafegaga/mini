@@ -606,8 +606,8 @@ and (|FunctionBinding|_|) p tokens =
     let r = Kwd "rec"
 
     let let' =  (|Token|_|) l <!> const' Ast.Unit <!> List.singleton
-    // Hack: using Variable to specify a rec because that info is lost when I do Consf and 
-    // I try to get it back with this bad boy
+    // Hack: I'm using Ast.Variable to specify a rec because that info is lost when I do Consf and 
+    // I try to get it back with this bad boy : "l'etat rec moi"
     let rec' =  (|Token|_|) r <!> const' (Ast.Variable "l'etat rec moi") <!> List.singleton
     let eq =  (|Token|_|) Equals <!> const' Ast.Unit <!> List.singleton
 
@@ -628,7 +628,7 @@ and (|FunctionBinding|_|) p tokens =
         variables  
         |> List.map (function
                      | Ast.Variable n -> n
-                     | _ -> failwith "this shouldn't happen, but I know it will")
+                     | _ -> failwith "this shouldn't happen, but I know it will (maybe not)")
 
     let value = 
         match tokens with 
