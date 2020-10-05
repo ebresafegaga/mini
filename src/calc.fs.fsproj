@@ -9,6 +9,10 @@
     <Compile Include="Syntax.fs" />
     <Compile Include="Typing.fs" />
     <Compile Include="Eval.fs" />
+    <Compile Include="codegen/LLVM.fs" />
+    <Compile Include="codegen/WebAssembly.fs" />
+    <Compile Include="codegen/x86.fs" />
+    <Compile Include="codegen/IL.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
