@@ -228,6 +228,10 @@ let rec infer (tenv : TypeEnv) = function
             let tenv' = Map.add name typ tenv
             work, tenv'
         | Error s -> Error s, tenv
+    | RecBinding (name, expr) -> 
+        let ty = freevar ()
+        let tenv = Map.add name ty tenv
+        infer tenv expr
 
 // TODO: fix this bug in the type checker 
 let f() = (fun esv es e -> esv e (es e)) (fun a e -> a) //
