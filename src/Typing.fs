@@ -11,7 +11,7 @@ type Type =
     | TyNumber 
     | TyString 
     | TyBool
-    | TyCon of Name * Type list // A type constructor e.g  TyCon ("List", TyNumber) 
+    | TyCon of Name * Type list // A type constructor e.g  TyCon ("List", TyNumber) is a List<number>
     | TyFunc of Type * Type
 
 /// TypeEnv is a finite mapping from terms to their respective types 
