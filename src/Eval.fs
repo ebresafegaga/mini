@@ -106,7 +106,7 @@ let rec eval ctx expr =
 // FUNCTION Application 101: 
 // Given an expression f
 // 1 : Determine if f is a churchable - Yes that's a real thing!
-// 2 : let args = < number of arguments given to f >
+// 2 : let args = **number of arguments given to f**
 // 3 : If args > 1
 //         check if f returns a function
 //         if it does, apply arguments one by one 
