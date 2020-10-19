@@ -81,6 +81,11 @@ module Result =
     //  Note that this two instances of seqA can be generalized by a (<*>)
     //  given that what the error contains is a Monoid
 
+    let (<*>) rf ra = 
+        match rf, ra with
+        | Ok f, Ok a -> Ok (f a)
+        | _, Error s | Error s, _ -> Error s
+ 
     let sequenceA list =
         let folder a s =
             match a, s with
