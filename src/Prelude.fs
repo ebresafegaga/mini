@@ -32,6 +32,13 @@ let rec (|Half|) xs =
         | _, xs -> ([], xs)
     Half (s xs xs)
 
+let rec split = function 
+    | a :: b :: xs -> 
+        let left, right = split xs 
+        a :: left, b :: right 
+    | [a] -> [a], []
+    | [] -> [], []
+
 type Either<'a, 'b> = Left of 'a | Right of 'b
 
 let (++) list a = list @ [a]

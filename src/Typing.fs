@@ -112,13 +112,8 @@ let rec unify t1 t2 =
     | TyString, TyString
     | TyBool, TyBool -> Ok () 
     | TyFunc (a1, r1), TyFunc (a2, r2) -> 
-        let a = unify a1 a2
-        let b = unify r1 r2 
-        match a, b with 
-        | Ok _, Ok _ -> Ok ()
-        | Error s1, Error s2 -> Error (List.concat [s1;s2]) 
-        | Error s, _ -> Error s 
-        | _, Error s -> Error s 
+        result { do! unify a1 a2
+                 do! unify r1 r2 }
     | TyCon (n1, a1), TyCon (n2, a2) ->
         let r = 
             a1
@@ -185,36 +180,34 @@ let rec infer (tenv : TypeEnv) = function
     | Lambda (name, body) -> 
         let ty = freevar ()
         let tenv' = Map.add name ty tenv
-        let result = fst $ infer tenv' body
+        let result = fst (infer tenv' body)
         match result with 
         | Ok value -> Ok (TyFunc (ty, value)), tenv
         | Error s -> Error s, tenv
     | If (pred, e1, e2) ->
-        let work = result {
-            let! typred = fst (infer tenv pred)
-            let! tye1 = fst (infer tenv e1) 
-            let! tye2 = fst (infer tenv e2)
+        let work = 
+            result { let! typred = fst (infer tenv pred)
+                     let! tye1 = fst (infer tenv e1) 
+                     let! tye2 = fst (infer tenv e2)
 
-            do! unify typred TyBool
-            do! unify tye1 tye2
+                     do! unify typred TyBool
+                     do! unify tye1 tye2
 
-            return tye1
-        }
+                     return tye1 }
         work, tenv
     | Application (func, args) ->
         // Not applying lambda calculus style 
-        let work = result {
-            let retTy = freevar ()
-            let! fty = fst (infer tenv func)
-            let! tys =
-                List.map (infer tenv >> fst) args
-                |> Result.sequenceA'
-            let fntyp = foldTypes tys retTy
+        let work = 
+            result { let retTy = freevar ()
+                     let! fty = fst (infer tenv func)
+                     let! tys =
+                        List.map (infer tenv >> fst) args
+                        |> Result.sequenceA'
+                     let fntyp = foldTypes tys retTy
 
-            do! unify fty fntyp
+                     do! unify fty fntyp
 
-            return retTy
-        }
+                     return retTy }
         work, tenv
     | Binary (l, op, r) ->
         failwith "TODO"
