@@ -195,7 +195,6 @@ let rec infer (tenv : TypeEnv) = function
                      return tye1 }
         work, tenv
     | Application (func, arg) ->
-        // Not applying lambda calculus style 
         let infer' = infer tenv >> fst 
         let work = 
             result { let retTy = freevar ()

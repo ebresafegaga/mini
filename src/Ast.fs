@@ -36,14 +36,14 @@ type Expression =
 let transformLambda x body =
     List.foldBack (uncurry Lambda) x body
 
+/// Transform converts an expression and a list of expression
+/// to a left associative application of the first expression to the rest 
+/// since applications take a single argument  
+/// e.g
+/// let expr = Lambda ("x", Variable "x")
+/// let args = [1..10] |> List.map (const' Unit)
+/// (App ((App ((App (f, Unit)), Unit)), Unit))
 let transformApp expr args = 
     List.fold (uncurry Application) expr args
 
 
-// let f = Lambda ("x", Variable "x")
-// let args = [1..10] |> List.map (const' Unit)
-
-// // (App ((App ((App (f, Unit)), Unit)), Unit))
-
-
-// let result = transformApp f args
