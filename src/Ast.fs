@@ -29,9 +29,12 @@ type Expression =
     | Binary of Expression * Name * Expression
     | List of Expression list
     | Lambda of Name * Expression
-    | Application of Expression * Expression list
+    | Application of Expression * Expression
 
 /// Transform a list of variable names and an expression body to a lambda calculus style function
 /// e.g {x = ["a"; "b"; "c"]}, {body = Unit} -> Lambda (a, (Lambda (b, Lambda (c, Unit))))
 let transformLambda x body =
     List.foldBack (uncurry Lambda) x body
+
+let transformApp expr args = 
+    List.fold (uncurry Application) expr args
