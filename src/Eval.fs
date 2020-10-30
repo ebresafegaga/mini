@@ -116,7 +116,7 @@ let rec eval ctx expr =
 and apply ctx f arg =
     let eval' = fst << eval ctx 
     let func, _ = eval ctx f // do I need a ctx from this call?
-    if not $ churchable func
+    if not (churchable func)
     then failwith "This value is not a function and cannot be applied." 
     else
         match func with 
