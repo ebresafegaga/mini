@@ -159,7 +159,7 @@ let rec infer (tenv : TypeEnv) = function
         let result = 
             match v with 
             | Some v -> fst (infer tenv v)
-            | None -> Ok $ freevar()
+            | None -> Ok (freevar ())
         match result with
         | Ok ty -> 
             let res = 
@@ -225,6 +225,6 @@ let rec infer (tenv : TypeEnv) = function
         infer tenv expr
 
 // TODO: fix this bug in the type checker 
-let f() = (fun esv es e -> esv e (es e)) (fun a e -> a) //
+let f() = (fun esv es e -> esv e (es e)) (fun a e -> a)  (fun a e -> a) //
 
 // program for mechanical derivation on eta reduction and eta abstraction 
