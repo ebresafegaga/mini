@@ -38,3 +38,12 @@ let transformLambda x body =
 
 let transformApp expr args = 
     List.fold (uncurry Application) expr args
+
+
+// let f = Lambda ("x", Variable "x")
+// let args = [1..10] |> List.map (const' Unit)
+
+// // (App ((App ((App (f, Unit)), Unit)), Unit))
+
+
+// let result = transformApp f args

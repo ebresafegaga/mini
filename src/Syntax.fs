@@ -675,14 +675,14 @@ and (|ApplicationExpression|_|) p tokens =
         | VariableExpression p (p1, name) -> 
             match pattern p1 tokens with 
             | Some (p3, ps) -> 
-                Some (p3, Ast.Application (name, ps))
+                Some (p3, Ast.transformApp name ps)
             | _ -> None
         | _ -> None
     let p2 p tokens =
         match tokens with
         | ParenthesizedExpression p (p1, (Ast.Lambda _ as f)) -> 
             match pattern p1 tokens with 
-            | Some (p2, ps) -> Some (p2, Ast.Application (f, ps))
+            | Some (p2, ps) -> Some (p2, Ast.transformApp f ps)
             | _ -> None
         | _ -> None
 

@@ -113,38 +113,22 @@ let rec eval ctx expr =
 //         if it doesn't fail
 // 5: This function is being applied with one argument (as it should be), just eval the body
 
-and apply ctx f args =
-    let eval' = eval ctx 
+and apply ctx f arg =
+    let eval' = fst << eval ctx 
     let func, _ = eval ctx f // do I need a ctx from this call?
     if not $ churchable func
     then failwith "This value is not a function and cannot be applied." 
     else
         match func with 
         | FuncValue (Defined (argument, context, Thunk thunk)) -> 
-            let aLen = List.length args   
-            if aLen > 1 // More args than required? - Yes, functions can have only 1 arguments. (Thank you, Alonzo Church!)
-            then
-                // Check if this "function value" returns a function
-                // if it does, apply arguments one by one 
-                if  not $ isThunkFunc (Thunk thunk)
-                then failwith "This value is not a function and cannot be applied."
-                else
-                    let _, env, _ =
-                        apply ctx f [List.head args] 
-                        |> fst 
-                        |> getDefinedFunc
-                    apply (addCtx env ctx) thunk (List.tail args)
-            else
-                // let argument, context, thunk = getFunc func
-                let value = (eval' >> fst) $ List.head args
-
-                let enviroment =
-                    (addCtx context ctx)
-                    |> addVar (argument, value)          
-
-                eval enviroment thunk
+            let value = eval' arg
+            let enviroment =
+                (addCtx context ctx)
+                |> addVar (argument, value)
+            eval enviroment thunk
         | FuncValue (Builtin f) -> 
-            f ctx args, ctx
+            // f ctx arg, ctx
+            failwith "not yet apadted for currying"
         | _ -> failwith "This value is not a function and cannot be applied"
 
 and (|GetBuiltin|_|) = function 
