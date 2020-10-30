@@ -624,10 +624,10 @@ and (|Binding|_|) p tokens =
         | Lets p (p, Consf f (Ast.Variable "l'etat rec moi", ConsSnoc (Ast.Variable name, vars, body))) -> 
             if List.isEmpty vars 
                 then Some (p, Ast.RecBinding (name, body))
-                else Some (p, Ast.RecBinding (name, Ast.transform (trans vars) body))
+                else Some (p, Ast.RecBinding (name, Ast.transformLambda (trans vars) body))
         | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body))) -> 
             let vars' = v :: vars 
-            Some (p, Ast.Binding (name, Ast.transform (trans vars') body))
+            Some (p, Ast.Binding (name, Ast.transformLambda (trans vars') body))
         | _ -> 
             None 
     value
@@ -649,7 +649,7 @@ and (|LambdaExpression|_|) p tokens =
                             |> List.map (function 
                                         | Ast.Variable n -> n 
                                         | _ -> failwith "(|FunctionExpression|_|): Internal error")
-                    Some (p4, Ast.transform l expr)
+                    Some (p4, Ast.transformLambda l expr)
                 | _ -> None 
             | _ -> None 
         | _ -> None 

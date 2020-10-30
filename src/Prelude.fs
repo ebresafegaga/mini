@@ -39,7 +39,9 @@ let rec split = function
     | [a] -> [a], []
     | [] -> [], []
 
-type Either<'a, 'b> = Left of 'a | Right of 'b
+type Either<'a, 'b> = 
+    | Left of 'a 
+    | Right of 'b
 
 let (++) list a = list @ [a]
 
