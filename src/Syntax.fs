@@ -216,13 +216,6 @@ let (|Symbols|_|) (sep: char) (ops: string) p text =
             ||> List.fold (fun f op -> f >>> ((|Symbol|_|) op))
     f text
 
-// let text = sr "=>>" 
-// let ops = sr "=>>" |> List.map string
-// match text with 
-// | Operators ops 0 (x, y) -> x, y
-// | Operator '=' 0 (x, y) -> x, y
-// | _ -> 0, ""
-
 let lex pos t =
     match sr t with 
     | Keyword pos (p, word) ->

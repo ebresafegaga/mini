@@ -1,6 +1,8 @@
 module Eval
 
 open Ast
+
+exception NoRuleApplies // TODO: Values are Expressions (a la TAPL)
  
 type Env = Env of (Name -> Value option) // Yes, the enviroment is a function
 
