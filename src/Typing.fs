@@ -64,9 +64,8 @@ let freevar =
 //
 
 // Chamge the value stored in a type variable 
-let chng value ty = 
-    match ty, value with 
-    | TyVar t, value -> t := value 
+let chng value = function
+    | TyVar t -> t := value 
     | _ -> ()
 
 let occurs t1 t2 = 
@@ -195,15 +194,14 @@ let rec infer (tenv : TypeEnv) = function
 
                      return tye1 }
         work, tenv
-    | Application (func, args) ->
+    | Application (func, arg) ->
         // Not applying lambda calculus style 
+        let infer' = infer tenv >> fst 
         let work = 
             result { let retTy = freevar ()
-                     let! fty = fst (infer tenv func)
-                     let! tys =
-                        List.map (infer tenv >> fst) args
-                        |> Result.sequenceA'
-                     let fntyp = foldTypes tys retTy
+                     let! fty = infer' func
+                     let! ty = infer' arg
+                     let fntyp = TyFunc (ty, retTy)
 
                      do! unify fty fntyp
 
