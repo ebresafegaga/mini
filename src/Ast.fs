@@ -33,5 +33,5 @@ type Expression =
 
 /// Transform a list of variable names and an expression body to a lambda calculus style function
 /// e.g {x = ["a"; "b"; "c"]}, {body = Unit} -> Lambda (a, (Lambda (b, Lambda (c, Unit))))
-let transform x body =
+let transformLambda x body =
     List.foldBack (uncurry Lambda) x body
