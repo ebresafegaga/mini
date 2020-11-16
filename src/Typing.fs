@@ -176,13 +176,14 @@ let rec infer (tenv : TypeEnv) = function
                 | Error s -> Error s, tenv
             | Error s -> Error s, tenv
         | Error s -> Error s, tenv
-    | Lambda (name, body) -> 
+    | Lambda (Variable name, body) -> 
         let ty = freevar ()
         let tenv' = Map.add name ty tenv
         let result = fst (infer tenv' body)
         match result with 
         | Ok value -> Ok (TyFunc (ty, value)), tenv
         | Error s -> Error s, tenv
+    | Lambda _ as l -> Error [sprintf "Invalid syntax tree %A" l], tenv
     | If (pred, e1, e2) ->
         let work = 
             result { let! typred = fst (infer tenv pred)

@@ -15,7 +15,7 @@ and Value =
 and Thunk = Thunk of Expression
 
 and Function =
-    | Defined of Name * Env * Thunk
+    | Defined of Expression * Env * Thunk
     | Builtin of (Env -> Expression list -> Value)
 
 let unThunk (Thunk thunk) = thunk
@@ -58,7 +58,7 @@ let getDefinedFunc = function
     | FuncValue (Defined (arg, env, expr)) -> arg, env, expr
     | ConstValue _
     | UnitValue | FuncValue _
-    | ListValue _ -> "", empty, Thunk Unit
+    | ListValue _ -> Variable "", empty, Thunk Unit
 
 let isThunkFunc = function
     | Thunk (Lambda _) | Thunk (Lambda _) -> true 
@@ -122,7 +122,7 @@ and apply ctx f arg =
     then failwith "This value is not a function and cannot be applied." 
     else
         match func with 
-        | FuncValue (Defined (argument, context, Thunk thunk)) -> 
+        | FuncValue (Defined (Variable argument, context, Thunk thunk)) -> 
             let value = eval' arg
             let enviroment =
                 (addCtx context ctx)
@@ -130,7 +130,7 @@ and apply ctx f arg =
             eval enviroment thunk
         | FuncValue (Builtin f) -> 
             // f ctx arg, ctx
-            failwith "not yet apadted for currying"
+            failwith "not yet adapted for currying"
         | _ -> failwith "This value is not a function and cannot be applied"
 
 and (|GetBuiltin|_|) = function 

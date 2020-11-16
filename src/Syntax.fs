@@ -43,7 +43,9 @@ let kwd w =
     |> List.contains w
 
 // builtin func?
-let builtin w = builtinKeywords |> List.contains w 
+let builtin w = 
+    builtinKeywords 
+    |> List.contains w 
 
 let ch l = 
     let a = Array.ofList l
@@ -602,13 +604,7 @@ and (|Binding|_|) p tokens =
 
     let (|Lets|_|) = thisAndThat (thisOrThat letEq letRec) (expr <!> List.singleton) <!> List.collect id
 
-    let f = function Ast.Unit -> false | _ -> true 
-
-    let trans variables =
-        variables  
-        |> List.map (function
-                     | Ast.Variable n -> n
-                     | _ -> failwith "this shouldn't happen, but I know it will (maybe not)")
+    let f = function Ast.Unit -> false | _ -> true
 
     let value = 
         match tokens with 
@@ -617,12 +613,11 @@ and (|Binding|_|) p tokens =
         | Lets p (p, Consf f (Ast.Variable "l'etat rec moi", ConsSnoc (Ast.Variable name, vars, body))) -> 
             if List.isEmpty vars 
                 then Some (p, Ast.RecBinding (name, body))
-                else Some (p, Ast.RecBinding (name, Ast.transformLambda (trans vars) body))
+                else Some (p, Ast.RecBinding (name, Ast.transformLambda vars body))
         | Lets p (p, Consf f (Ast.Variable name, ConsSnoc (v, vars, body))) -> 
             let vars' = v :: vars 
-            Some (p, Ast.Binding (name, Ast.transformLambda (trans vars') body))
-        | _ -> 
-            None 
+            Some (p, Ast.Binding (name, Ast.transformLambda vars' body))
+        | _ -> None 
     value
 
 // alow unit params 
@@ -638,11 +633,7 @@ and (|LambdaExpression|_|) p tokens =
             | Token FuncArrow p2 (p3, _) -> 
                 match tokens with 
                 | Expression p3 (p4, expr) -> 
-                    let l = ps 
-                            |> List.map (function 
-                                        | Ast.Variable n -> n 
-                                        | _ -> failwith "(|FunctionExpression|_|): Internal error")
-                    Some (p4, Ast.transformLambda l expr)
+                    Some (p4, Ast.transformLambda ps expr)
                 | _ -> None 
             | _ -> None 
         | _ -> None 
@@ -651,8 +642,7 @@ and (|LambdaExpression|_|) p tokens =
 and (|SimpleExpression|_|) p tokens = 
     match tokens with 
     | ListExpression p result | ParenthesizedExpression p result
-    | ConstExpression p result
-    | VariableExpression p result 
+    | ConstExpression p result | VariableExpression p result 
     | UnitExpression p result -> Some result
     | _ -> None
 

@@ -28,7 +28,7 @@ type Expression =
     | RecBinding of Name * Expression
     | Binary of Expression * Name * Expression
     | List of Expression list
-    | Lambda of Name * Expression
+    | Lambda of Expression * Expression
     | Application of Expression * Expression
 
 /// Transform a list of variable names and an expression body to a lambda calculus style function
