@@ -18,14 +18,6 @@ and Function =
     | Defined of Expression * Env * Thunk
     | Builtin of (Env -> Expression list -> Value)
 
-let unThunk (Thunk thunk) = thunk
-
-let mapContext f (Env g) = 
-    let k s = Option.map f (g s)
-    Env k
-
-let unEnv (Env f) = f
-
 let empty = Env (const' None)
 
 let addVar (var, expr) (Env ctx) =
@@ -41,28 +33,12 @@ let addCtx (Env f) (Env g) =
         | Some _ as v -> v
     Env k
 
-let remove x = function
-    | Env f -> 
-        match f x with 
-        | None -> Env f 
-        | Some _ -> Env $ fun x' -> if x' = x then None else f x'
-
 /// Is this value a function? 
 let churchable = function
     | FuncValue _ -> true
     | ConstValue _
     | UnitValue | FuncValue _
     | ListValue _ -> false
-
-let getDefinedFunc = function
-    | FuncValue (Defined (arg, env, expr)) -> arg, env, expr
-    | ConstValue _
-    | UnitValue | FuncValue _
-    | ListValue _ -> Variable "", empty, Thunk Unit
-
-let isThunkFunc = function
-    | Thunk (Lambda _) | Thunk (Lambda _) -> true 
-    | _ -> false
 
 let rec eval ctx expr =
     let eval' = eval ctx
