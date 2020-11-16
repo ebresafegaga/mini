@@ -1,28 +1,15 @@
 module Syntax
 
 type Kind =
-    | Kwd of string 
-    | Id of string 
-    | Num of float
-    | QuotedId of string
-    | Plus
-    | Minus
-    | Star
-    | Slash
-    | GreaterThan 
-    | LessThan
-    | Equals
-    | FuncArrow // Also GreaterThanOrEquals
-    | Builtin of string  
-    | OpenSquareBracket
-    | CloseSquareBraket
-    | OpenParenthesis
-    | CloseParenthesis
-    | Comma
-    | Dot
-    | DotDot
-    | Ws
-    | Bad of char
+    | Kwd of string | Id of string 
+    | Num of float | QuotedId of string
+    | Plus | Minus | Star
+    | Slash | GreaterThan | LessThan
+    | Equals | FuncArrow // Also GreaterThanOrEquals
+    | Builtin of string | OpenSquareBracket
+    | CloseSquareBraket | OpenParenthesis
+    | CloseParenthesis | Comma | Dot | DotDot
+    | Ws | Bad of char
 
 type Location = int
 
@@ -78,15 +65,7 @@ let rec (|WS|_|) p t =
         else go (c + 1)
     if p >= len then None 
     elif (go p) = p then None 
-    else Some (go p) 
-
-// match t with 
-// | Cond Char.IsLetter 0 t -> t 
-// | Cond Char.IsDigit 0 t -> t 
-
-// let text = sr "      "
-// match text with 
-// | WS 0 x -> x
+    else Some (go p)
 
 let (|Letter|_|) p t =
     if List.length t <= p then None
@@ -193,11 +172,7 @@ let (|Lit|_|) p t =
 
 let (|QuotedIdentifier|_|) p t =
     let f = (|Quote|_|) p >>> (|Lit|_|) >>> (|Quote|_|)
-    f t 
-
-// let s = sr """"no" """
-// match s with 
-// | QuotedIdentifier 0 x -> x
+    f t
 
 let (|Operator|_|) op p t =
     if List.isEmpty t then None
