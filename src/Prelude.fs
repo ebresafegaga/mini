@@ -51,6 +51,8 @@ let const' x = fun _ -> x
 
 let uncurry f a b = f (a, b)
 
+let flip f = fun y x -> f x y
+
 module String =
     let toList (s: string) = 
         s.ToCharArray ()
