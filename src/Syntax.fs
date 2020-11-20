@@ -269,7 +269,7 @@ let tokenize text =
             let token, next = lex pos text
             let nl = (sr text).[next..]
             aux next nl (fun result -> k (token :: result))
-
+    // aux 0 (sr text) id
     let rec go pos my tokens =  
         match my with 
         | [] -> List.rev tokens

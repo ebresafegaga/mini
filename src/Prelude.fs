@@ -77,16 +77,6 @@ module Map =
 
         Map.foldBack folder m1 m2
 
-type ResultBuilder () =
-    member x.Return a = Ok a
-    member x.Bind (r, f) =
-        match r with 
-        | Ok a -> f a
-        | Error s -> Error s
-    member x.ReturnFrom a = a
-
-let result = ResultBuilder ()
-
 module Result =
     // 
     //  Note that this two instances of seqA can be generalized by a (<*>)
@@ -116,8 +106,22 @@ module Result =
             | Error s, _ | _, Error s -> Error s
         List.foldBack folder list (Ok [])
 
+type ResultBuilder () =
+    member x.Return a = Ok a
+    member x.Bind (r, f) =
+        match r with 
+        | Ok a -> f a
+        | Error s -> Error s
+    member x.Zero () = Error []
+    member x.Delay f = f ()
+    member x.Combine (a, b) = x.Bind (a, fun _ -> b)
+    member x.ReturnFrom a = a
+
+let result = ResultBuilder ()
+
 module List = 
     let rec zipWith f xs ys = 
         match xs, ys with
         | x :: xs, y :: ys ->  f x y :: zipWith f xs ys 
         | _ -> []
+
