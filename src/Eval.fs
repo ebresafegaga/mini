@@ -15,7 +15,10 @@ and Value =
 and Thunk = Thunk of Expression
 
 and Function =
-    | Defined of Expression * Env * Thunk
+    | Defined of 
+        argument : Expression * 
+        enviroment : Env * 
+        body : Thunk
     | Builtin of (Env -> Expression list -> Value)
 
 let empty = Env (const' None)
