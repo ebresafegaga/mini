@@ -43,16 +43,18 @@ let rec codegen = function
                  | "-" -> return LLVM.BuildFSub (builder, l, r, "subtmp") 
                  | "*" -> return LLVM.BuildFMul (builder, l, r, "multmp") 
                  | "/" -> return LLVM.BuildFAdd (builder, l, r, "divtmp")
+                 // TODO : other operators
                  | _ -> return! Error [ sprintf "Invalid binary operator %s" op ] }
     | Ast.Application (Ast.Variable callee, arg) -> // Handle lambda by creating a global function 
-        result {let callee = 
+        result {let callee' = 
                     match lookupFunction callee M with 
                     | Some callee -> Ok callee
                     | None -> Error [ sprintf "Undefined function %s" callee] 
-                let! callee = callee 
-                let args = LLVM.GetParams callee 
-                if Array.length args = Array.length [| arg |] then
-                    return LLVM.BuildCall (builder, callee, args, "calltmp") }
+                let! callee' = callee' 
+                let args = LLVM.GetParams callee' 
+                if Array.length args = Array.length [| arg |]
+                then return LLVM.BuildCall (builder, callee', args, "calltmp") 
+                else return! Error [ sprintf "Invalid number of arguments applied to %s" callee ] }
         
 
 
